@@ -57,7 +57,7 @@ def evaluate_daily_habits(household_id: int) -> dict:
                 """,
                 parameters={"hid": household_id},
             )
-            peak_kwh = float(r.named_results()[0]["peak_kwh"] or 0)
+            peak_kwh = float(next(iter(r.named_results()))["peak_kwh"] or 0)
         except Exception:
             peak_kwh = 0.0
     else:
@@ -84,7 +84,7 @@ def evaluate_daily_habits(household_id: int) -> dict:
                 """,
                 parameters={"hid": household_id},
             )
-            row = r.named_results()[0]
+            row = next(iter(r.named_results()))
             this_w = float(row["this_week"] or 0)
             last_w = float(row["last_week"] or 1)
             on_track = this_w < last_w * HABITS["weekly_reduction"]["threshold_pct"]
@@ -120,7 +120,7 @@ def get_streak(household_id: int, habit_type: str) -> int:
             """,
             parameters={"hid": household_id, "ht": habit_type},
         )
-        rows = r.named_results()
+        rows = list(r.named_results())
         return int(rows[0]["streak_day"]) if rows else 0
     except Exception:
         return 0
@@ -142,7 +142,7 @@ def get_week_rate(household_id: int, habit_type: str) -> float:
             """,
             parameters={"hid": household_id, "ht": habit_type},
         )
-        row = r.named_results()[0]
+        row = next(iter(r.named_results()))
         total = int(row["total_days"] or 0)
         achieved = int(row["achieved_days"] or 0)
         return round(achieved / total, 2) if total else 0.0
@@ -166,7 +166,7 @@ def compute_weekly_impact(household_id: int) -> dict:
             """,
             parameters={"hid": household_id},
         )
-        row = r.named_results()[0]
+        row = next(iter(r.named_results()))
         this_w = float(row["this_week"] or 0)
         baseline = float(row["baseline_week"] or 1)
         saved = max(0.0, baseline - this_w)

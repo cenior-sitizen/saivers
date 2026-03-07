@@ -107,15 +107,15 @@ def peak_heatmap() -> list[HeatmapSlot]:
     result = client.query(
         """
         SELECT
-            toString(interval_date)           AS interval_date,
+            toString(interval_date)           AS date_str,
             slot_idx,
             round(sumMerge(total_kwh), 3)     AS total_kwh,
             toUInt32(uniqMerge(active_homes)) AS active_homes
         FROM neighborhood_rollup
         WHERE neighborhood_id = {neighborhood_id:String}
           AND interval_date >= today() - 7
-        GROUP BY interval_date, slot_idx
-        ORDER BY interval_date, slot_idx
+        GROUP BY date_str, slot_idx
+        ORDER BY date_str, slot_idx
         """,
         parameters={"neighborhood_id": NEIGHBORHOOD_ID},
     )

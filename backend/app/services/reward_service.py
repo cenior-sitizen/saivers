@@ -38,7 +38,7 @@ def get_balance(household_id: int) -> int:
             """,
             parameters={"hid": household_id},
         )
-        return int(r.named_results()[0]["total"] or 0)
+        return int(next(iter(r.named_results()))["total"] or 0)
     except Exception:
         return 0
 
