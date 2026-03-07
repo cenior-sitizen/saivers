@@ -2189,3 +2189,363 @@ For `weekly_reduction`, use `toISOWeek(event_date) = toISOWeek(today())` instead
 
 **The frontend never needs to understand ingestion timing** — just refresh the rewards endpoint and the balance will reflect the latest state.
 
+
+---
+
+## MCP Device Communication + Weekly AI Recommendations — Implementation Plan
+
+> Review score: **8.4/10** (Codex Rubric A, round 2) | Readiness: 88/100 | Date: 2026-03-08
+
+### Goal
+
+Add MCP communication layer + daily snapshot + weekly AI per-device recommendations with user-approve-then-apply flow. Monthly report is a **stretch goal**.
+
+### Scope
+
+**Core (must ship):** MCP client · weekly AI recs · user-approve apply flow · daily snapshot  
+**Stretch:** Monthly performance report with neighbourhood comparison
+
+### New Files & Changes
+
+| Action | Path | Purpose |
+|---|---|---|
+| New | `app/services/mcp_client.py` | MCPClient — mock ↔ miot abstraction |
+| New | `app/services/recommendation_service.py` | Weekly rec generation + apply |
+| New | `app/routers/recommendations.py` | REST endpoints |
+| New | `app/routers/reports.py` (stretch) | Monthly report |
+| New | `app/services/monthly_report_service.py` (stretch) | Monthly report logic |
+| Modify | `app/db/migrations.py` | 2 new tables |
+| Modify | `app/routers/devices.py` | Add daily snapshot endpoint |
+| Modify | `app/main.py` | Mount new routers |
+
+### Device Identity Mapping
+
+ClickHouse `ac_readings` uses room-level IDs. ac-simulator uses unit-level IDs. The `MCPClient` bridges them:
+
+```python
+SIMULATOR_DEVICE_MAP = {
+    "ac-living-room": ["ac-living-room-1", "ac-living-room-2"],
+    "ac-master-room": ["ac-master-room-1", "ac-master-room-2"],
+    "ac-room-1":      ["ac-room-1-unit-1", "ac-room-1-unit-2"],
+    "ac-room-2":      ["ac-room-2-unit-1", "ac-room-2-unit-2"],
+}
+```
+
+Recommendations are generated from ClickHouse (room-level). Applying one recommendation commands both simulator units for that room.
+
+### New ClickHouse Tables
+
+**`weekly_recommendations`** — stores AI-generated recs, idempotent per ISO week:
+```sql
+household_id UInt32, iso_week LowCardinality(String), rec_id String,
+device_id LowCardinality(String), current_temp UInt8, rec_temp UInt8,
+current_mode LowCardinality(String), rec_mode LowCardinality(String),
+reason String, ai_summary String DEFAULT '', created_at DateTime DEFAULT now()
+ENGINE = MergeTree ORDER BY (household_id, iso_week, rec_id)
+```
+
+**`applied_recommendations`** — append-only idempotency source:
+```sql
+household_id UInt32, rec_id String, action_id String,
+applied_at DateTime DEFAULT now(), new_temp UInt8, new_mode LowCardinality(String)
+ENGINE = MergeTree ORDER BY (household_id, rec_id, applied_at)
+```
+
+### New Endpoints
+
+```
+GET  /api/devices/daily-snapshot/{household_id}
+     → [{device_id, kwh_today, runtime_hours, avg_temp_c, is_on_now}] — 4 rows always
+
+GET  /api/recommendations/weekly/{household_id}
+     → [{rec_id, device_id, device_name, current_temp, rec_temp,
+          current_mode, rec_mode, reason, already_applied}]
+
+POST /api/recommendations/apply/{household_id}
+     body: {"rec_ids": ["uuid1", "uuid2"]}
+     → [{rec_id, success, action_id, new_temp, new_mode, error?}] per rec
+
+GET  /api/recommendations/history/{household_id}
+     → last 4 ISO weeks with applied_count / total_count per week
+
+GET  /api/reports/monthly/{household_id}?year=2026&month=3   [STRETCH]
+     → {total_kwh, total_cost_sgd, habits_achieved_count, neighbourhood,
+         green_grid_co2_saved_kg, ai_narrative}
+```
+
+### Weekly Recommendation Flow
+
+```
+Frontend loads Saturday dashboard
+  → GET /api/recommendations/weekly/1001
+    → recommendation_service checks DB for this ISO week
+    → If empty: query ac_readings this_week vs last_week per room
+      → OpenAI structured JSON → INSERT weekly_recommendations
+      → OpenAI fallback: if usage up >10% → rec_temp = current_temp + 1
+    → Return rec list with already_applied status
+
+User reviews diff (e.g. "Living Room: 23°C → 25°C, reason: usage up 27%")
+  → POST /api/recommendations/apply/1001  {"rec_ids": ["uuid1", "uuid2"]}
+    → For each rec_id:
+        check applied_recommendations (idempotency)
+        MCPClient.apply_settings(hid, room_device_id, rec_temp, rec_mode)
+          → MCP_MODE=mock: POST /ac/1001/ac-living-room-1/on {temp_c:25, mode:"cool"}
+          → MCP_MODE=miot: log "Would call Xiaomi MIoT MCP" → return mock success
+        INSERT applied_recommendations, device_actions
+    → Return per-rec result array (partial success supported)
+```
+
+### MCP Client Modes
+
+| Mode | Behaviour | When to use |
+|---|---|---|
+| `mock` (default) | Calls ac-simulator REST on port 8002 | Development + demo |
+| `miot` | Logs intent, returns mock success | Presentation narrative ("Xiaomi MIoT MCP") |
+
+Set via env: `MCP_MODE=mock` or `MCP_MODE=miot`
+
+### Key Design Decisions
+
+- **Idempotent generation**: `get_or_generate_weekly_recs()` checks DB first — OpenAI is only called once per ISO week per household
+- **Idempotent apply**: `applied_recommendations` is checked before every apply — duplicate POSTs return `{already_applied: true}`
+- **Partial success**: applying multiple `rec_ids` returns per-rec results — one failure never blocks others
+- **Fan-out logging**: one room-level apply creates two `device_actions` rows (one per simulator unit)
+- **OpenAI failure**: rule-based fallback — never returns 500
+
+### Acceptance Criteria
+
+- [ ] `GET /api/devices/daily-snapshot/1001` returns 4-device today kWh
+- [ ] `GET /api/recommendations/weekly/1001` returns rec list for current ISO week
+- [ ] Calling weekly endpoint twice does NOT double-insert recommendations
+- [ ] `POST /api/recommendations/apply/1001` calls ac-simulator + logs `device_actions`
+- [ ] Same `rec_id` applied twice → `{already_applied: true}` on second call
+- [ ] `MCP_MODE=mock` works; `MCP_MODE=miot` returns success without external calls
+- [ ] OpenAI failure falls back to rule-based recs (no 500)
+- [ ] Both new tables present in `migrations.py`
+
+
+---
+
+### 2026-03-08 — MCP Communication Layer + Weekly AI Recommendations
+
+**What we added:**
+
+Full pivot from direct AC device communication to an MCP abstraction layer, plus daily/weekly cadence endpoints with AI-powered per-device recommendations.
+
+---
+
+## MCP Communication Layer
+
+The backend now communicates with AC appliances through `MCPClient` — an abstraction that supports two modes:
+
+| Mode | Behaviour |
+|---|---|
+| `mock` (default) | Calls ac-simulator REST API at `AC_SIMULATOR_URL` (port 8002) |
+| `miot` | Stubs Xiaomi MIoT MCP — logs intent, returns success (presentation narrative) |
+
+Set mode via environment variable: `MCP_MODE=mock` or `MCP_MODE=miot`
+
+### Device Mapping
+
+ClickHouse stores room-level device IDs. The ac-simulator uses unit-level IDs. `MCPClient` bridges them automatically:
+
+```
+ac-living-room  →  [ac-living-room-1,  ac-living-room-2]
+ac-master-room  →  [ac-master-room-1,  ac-master-room-2]
+ac-room-1       →  [ac-room-1-unit-1,  ac-room-1-unit-2]
+ac-room-2       →  [ac-room-2-unit-1,  ac-room-2-unit-2]
+```
+
+One recommendation for a room commands **both** AC units for that room.
+
+---
+
+## New Endpoints
+
+### GET `/api/devices/daily-snapshot/{household_id}`
+
+Today's per-device usage snapshot. Frontend fetches once on page load (8am pattern — no push).
+Always returns 4 room entries, zeros if no data.
+
+```bash
+curl http://localhost:8000/api/devices/daily-snapshot/1001
+```
+
+```json
+[
+  {
+    "device_id": "ac-living-room",
+    "device_name": "Living Room AC",
+    "kwh_today": 2.4,
+    "runtime_hours": 4.5,
+    "avg_temp_c": 24.0,
+    "is_on_now": true,
+    "power_w": 1291.4
+  },
+  ...3 more rooms
+]
+```
+
+| Field | Description |
+|---|---|
+| `kwh_today` | Total kWh consumed today (from ClickHouse ac_readings) |
+| `runtime_hours` | Hours the AC ran today |
+| `avg_temp_c` | Average set temperature while on |
+| `is_on_now` | Current on/off state (ClickHouse latest reading) |
+| `power_w` | Live power draw in watts (from ac-simulator SSE; 0 if simulator offline) |
+
+---
+
+### GET `/api/recommendations/weekly/{household_id}`
+
+Returns this ISO week's AI-generated per-device recommendations.
+**Idempotent** — calling multiple times returns the same recommendations (generated once per week per household).
+
+```bash
+curl http://localhost:8000/api/recommendations/weekly/1001
+```
+
+```json
+[
+  {
+    "rec_id": "191e41f7-...",
+    "device_id": "ac-living-room",
+    "device_name": "Living Room AC",
+    "current_temp": 25,
+    "rec_temp": 27,
+    "current_mode": "cool",
+    "rec_mode": "cool",
+    "reason": "Usage up 15% vs last week. Raising set-point by 2°C reduces power draw ~10%.",
+    "already_applied": false
+  },
+  ...3 more rooms
+]
+```
+
+**Generation logic:**
+1. Check ClickHouse for this ISO week — return cached if exists
+2. Query `ac_readings`: this-week vs last-week kWh + avg temp per room
+3. OpenAI GPT-4o generates structured per-device recommendations
+4. Fallback (if OpenAI fails): rule-based — usage up >10% → raise temp 1°C
+
+---
+
+### POST `/api/recommendations/apply/{household_id}`
+
+User approves selected recommendations → backend applies via MCP → AC units updated.
+
+```bash
+curl -X POST http://localhost:8000/api/recommendations/apply/1001 \
+  -H "Content-Type: application/json" \
+  -d '{"rec_ids": ["191e41f7-...", "21a1eacb-..."]}'
+```
+
+```json
+[
+  {
+    "success": true,
+    "partial": false,
+    "rec_id": "191e41f7-...",
+    "device_id": "ac-living-room",
+    "action_id": "ACT-1001-191e41f7",
+    "new_temp": 27,
+    "new_mode": "cool",
+    "units": [
+      {"device_id": "ac-living-room-1", "success": true},
+      {"device_id": "ac-living-room-2", "success": true}
+    ]
+  }
+]
+```
+
+**Key behaviours:**
+- `already_applied: true` returned if same `rec_id` is posted again (idempotent)
+- Partial success: if one simulator unit fails, `partial: true` — the other unit's apply still succeeds
+- Each rec commands **both** AC units for that room via MCP fan-out
+
+---
+
+### GET `/api/recommendations/history/{household_id}`
+
+Last 4 weeks of recommendations with applied counts.
+
+```bash
+curl http://localhost:8000/api/recommendations/history/1001
+```
+
+```json
+[
+  {
+    "iso_week": "2026-W10",
+    "recommendations": [...],
+    "applied_count": 3,
+    "total_count": 4
+  }
+]
+```
+
+---
+
+## Frontend Integration Guide
+
+### Daily graph (8am fetch pattern)
+
+```ts
+// Fetch once on page load — no polling needed
+const snapshot = await fetch("http://localhost:8000/api/devices/daily-snapshot/1001")
+  .then(r => r.json());
+
+// Map to chart data
+snapshot.forEach(device => {
+  // device.device_id, device.kwh_today, device.runtime_hours, device.power_w
+});
+```
+
+### Weekly recommendations (Saturday dashboard)
+
+```ts
+// 1. Load this week's recommendations
+const recs = await fetch("http://localhost:8000/api/recommendations/weekly/1001")
+  .then(r => r.json());
+
+// 2. Show diff cards: current_temp → rec_temp, current_mode → rec_mode
+// 3. User selects which recs to apply
+
+// 4. Apply approved recommendations
+const selectedIds = recs
+  .filter(r => !r.already_applied && userApproved(r.rec_id))
+  .map(r => r.rec_id);
+
+const results = await fetch("http://localhost:8000/api/recommendations/apply/1001", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({rec_ids: selectedIds})
+}).then(r => r.json());
+
+// 5. results[i].success → show success/failure per device
+// 6. Refresh recommendations to see already_applied: true
+```
+
+---
+
+## New ClickHouse Tables
+
+Two new tables added to `app/db/migrations.py` (run automatically on server start):
+
+**`weekly_recommendations`** — AI-generated recs, one set per household per ISO week  
+**`applied_recommendations`** — Append-only log of accepted recommendations (idempotency source)
+
+Run migrations manually:
+```bash
+uv run python -m app.db.migrations
+```
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `MCP_MODE` | `mock` | `mock` = ac-simulator REST, `miot` = Xiaomi MIoT stub |
+| `AC_SIMULATOR_URL` | `http://localhost:8002` | ac-simulator base URL |
+

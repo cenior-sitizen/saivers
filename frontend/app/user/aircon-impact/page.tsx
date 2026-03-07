@@ -6,19 +6,37 @@ import { UsageChart } from "@/components/UsageChart";
 import { SpikeCard } from "@/components/SpikeCard";
 import { InsightCard } from "@/components/InsightCard";
 import { RecommendationCard } from "@/components/RecommendationCard";
-import {
-  summaryMetrics,
-  weeklyComparison,
-  roomUsageData,
-  chartData,
-  spikeEvents,
-  savingsInsight,
-  recommendations,
-} from "./mockData";
 import { fetchImpactData } from "@/lib/aircon-data";
 
 export default async function AirconImpactScreen() {
-  const apiData = await fetchImpactData();
+  let apiData;
+  try {
+    apiData = await fetchImpactData();
+  } catch {
+    return (
+      <div className="px-4 py-6 sm:mx-auto sm:max-w-md sm:px-0">
+        <Link
+          href="/user"
+          className="mb-2 inline-flex items-center gap-1 text-sm text-[#666666] hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+        >
+          ← Back to My Home
+        </Link>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+          <p className="text-sm text-amber-800 dark:text-amber-200">
+            Unable to load data. Ensure ClickHouse is configured (CLICKHOUSE_ENABLED=true and credentials in .env).
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const summaryMetrics = [
+    { label: "Total Aircon Usage This Week", value: `${apiData.summary.totalKwhThisWeek} kWh` },
+    { label: "Estimated Cost This Week", value: apiData.summary.costThisWeek },
+    { label: "Saved This Week", value: apiData.summary.savedThisWeekLabel },
+    { label: "Projected Monthly Savings", value: apiData.summary.projectedMonthlySavings },
+  ];
+
   return (
     <div className="px-4 py-6 sm:mx-auto sm:max-w-md sm:px-0">
       {/* Header */}
@@ -40,20 +58,7 @@ export default async function AirconImpactScreen() {
       {/* Weekly summary cards */}
       <section className="mb-6">
         <div className="grid grid-cols-2 gap-3">
-          {(apiData?.summary
-            ? [
-                {
-                  label: "Total Aircon Usage This Week",
-                  value: `${apiData.summary.totalKwhThisWeek} kWh`,
-                },
-                {
-                  label: "Estimated Cost This Week",
-                  value: apiData.summary.costThisWeek,
-                },
-                ...summaryMetrics.slice(2),
-              ]
-            : summaryMetrics
-          ).map((metric) => (
+          {summaryMetrics.map((metric) => (
             <SummaryCard
               key={metric.label}
               label={metric.label}
@@ -66,11 +71,11 @@ export default async function AirconImpactScreen() {
       {/* This Week vs Last Week */}
       <section className="mb-6">
         <ComparisonCard
-          thisWeek={apiData?.weeklyComparison?.thisWeek ?? weeklyComparison.thisWeek}
-          lastWeek={apiData?.weeklyComparison?.lastWeek ?? weeklyComparison.lastWeek}
-          percentChange={apiData?.weeklyComparison?.percentChange ?? weeklyComparison.percentChange}
-          thisWeekCost={apiData?.weeklyComparison?.thisWeekCost ?? weeklyComparison.thisWeekCost}
-          lastWeekCost={apiData?.weeklyComparison?.lastWeekCost ?? weeklyComparison.lastWeekCost}
+          thisWeek={apiData.weeklyComparison.thisWeek}
+          lastWeek={apiData.weeklyComparison.lastWeek}
+          percentChange={apiData.weeklyComparison.percentChange}
+          thisWeekCost={apiData.weeklyComparison.thisWeekCost}
+          lastWeekCost={apiData.weeklyComparison.lastWeekCost}
         />
       </section>
 
@@ -80,7 +85,7 @@ export default async function AirconImpactScreen() {
           Room-by-room breakdown
         </h2>
         <div className="flex flex-col gap-3">
-          {(apiData?.roomUsageData?.length ? apiData.roomUsageData : roomUsageData).map((room) => (
+          {apiData.roomUsageData.map((room) => (
             <RoomUsageCard
               key={room.id}
               name={room.name}
@@ -98,22 +103,19 @@ export default async function AirconImpactScreen() {
       {/* Usage trend chart */}
       <section className="mb-6">
         <UsageChart
-          data={
-            apiData?.chartData?.length
-              ? apiData.chartData
-              : chartData
-          }
+          data={apiData.chartData}
           title="Weekly Usage Trend"
         />
       </section>
 
       {/* Spike highlights */}
+      {apiData.spikeEvents.length > 0 && (
       <section className="mb-6">
         <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           Spike highlights
         </h2>
         <div className="flex flex-col gap-2">
-          {spikeEvents.map((event) => (
+          {apiData.spikeEvents.map((event) => (
             <SpikeCard
               key={event.id}
               time={event.time}
@@ -122,12 +124,13 @@ export default async function AirconImpactScreen() {
           ))}
         </div>
       </section>
+      )}
 
       {/* Savings insight */}
       <section className="mb-6">
         <InsightCard
-          savedThisWeek={savingsInsight.savedThisWeek}
-          projectedMonthly={savingsInsight.projectedMonthly}
+          savedThisWeek={apiData.savingsInsight.savedThisWeek}
+          projectedMonthly={apiData.savingsInsight.projectedMonthly}
         />
       </section>
 
@@ -137,7 +140,7 @@ export default async function AirconImpactScreen() {
           Recommendations
         </h2>
         <div className="flex flex-col gap-3">
-          {recommendations.map((rec) => (
+          {apiData.recommendations.map((rec) => (
             <RecommendationCard
               key={rec.id}
               title={rec.title}
