@@ -6,16 +6,38 @@ interface StatCardProps {
   subtitle?: string;
   icon?: React.ReactNode;
   trend?: "up" | "down" | "neutral";
-  accent?: "emerald" | "sky" | "amber" | "zinc";
+  accent?: "teal" | "emerald" | "sky" | "amber" | "zinc";
 }
 
-const accentColors = {
-  emerald:
-    "border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-l-emerald-400",
-  sky: "border-l-sky-500 bg-sky-50/50 dark:bg-sky-950/20 dark:border-l-sky-400",
-  amber:
-    "border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 dark:border-l-amber-400",
-  zinc: "border-l-zinc-400 bg-zinc-50/50 dark:bg-zinc-900/50 dark:border-l-zinc-500",
+const ACCENT_STYLES: Record<
+  NonNullable<StatCardProps["accent"]>,
+  { bar: string; bg: string; icon: string }
+> = {
+  teal: {
+    bar: "bg-[#00a3ad]",
+    bg: "bg-[rgba(0,163,173,0.06)]",
+    icon: "bg-[rgba(0,163,173,0.10)] text-[#007B8A]",
+  },
+  emerald: {
+    bar: "bg-emerald-500",
+    bg: "bg-emerald-50/60",
+    icon: "bg-emerald-100 text-emerald-700",
+  },
+  sky: {
+    bar: "bg-sky-500",
+    bg: "bg-sky-50/60",
+    icon: "bg-sky-100 text-sky-700",
+  },
+  amber: {
+    bar: "bg-amber-500",
+    bg: "bg-amber-50/60",
+    icon: "bg-amber-100 text-amber-700",
+  },
+  zinc: {
+    bar: "bg-[#6f8c91]",
+    bg: "bg-[rgba(157,207,212,0.08)]",
+    icon: "bg-[rgba(157,207,212,0.20)] text-[#4d6b70]",
+  },
 };
 
 export function StatCard({
@@ -24,45 +46,48 @@ export function StatCard({
   subtitle,
   icon,
   trend,
-  accent = "zinc",
+  accent = "teal",
 }: StatCardProps) {
+  const styles = ACCENT_STYLES[accent] ?? ACCENT_STYLES.teal;
+
   return (
     <div
-      className={`rounded-xl border border-zinc-200/80 border-l-4 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80 ${accentColors[accent]}`}
+      className={`relative overflow-hidden rounded-2xl border border-[rgba(157,207,212,0.35)] bg-gradient-to-b from-white/95 to-[rgba(243,249,249,0.88)] p-5 shadow-[0_4px_16px_rgba(0,123,138,0.07)] transition-shadow hover:shadow-[0_8px_24px_rgba(0,123,138,0.12)] ${styles.bg}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+      {/* Left accent bar */}
+      <div className={`absolute left-0 top-0 h-full w-1 rounded-l-2xl ${styles.bar}`} />
+
+      <div className="flex items-start justify-between gap-3 pl-1">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6f8c91]">
             {title}
           </p>
-          <p className="mt-1.5 text-2xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+          <p className="mt-1.5 text-2xl font-bold tabular-nums text-[#10363b]">
             {value}
           </p>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-              {subtitle}
-            </p>
+            <p className="mt-0.5 text-xs text-[#6f8c91]">{subtitle}</p>
+          )}
+          {trend && (
+            <span
+              className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${
+                trend === "up"
+                  ? "text-amber-600"
+                  : trend === "down"
+                    ? "text-emerald-600"
+                    : "text-[#6f8c91]"
+              }`}
+            >
+              {trend === "up" ? "↑ Higher" : trend === "down" ? "↓ Lower" : "— Stable"}
+            </span>
           )}
         </div>
         {icon && (
-          <div className="rounded-lg bg-white/80 p-2 dark:bg-zinc-800/80">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${styles.icon}`}>
             {icon}
           </div>
         )}
       </div>
-      {trend && (
-        <span
-          className={`mt-2 inline-block text-xs font-medium ${
-            trend === "up"
-              ? "text-amber-600 dark:text-amber-400"
-              : trend === "down"
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-zinc-500"
-          }`}
-        >
-          {trend === "up" ? "↑" : trend === "down" ? "↓" : "—"}
-        </span>
-      )}
     </div>
   );
 }

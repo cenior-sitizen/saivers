@@ -84,7 +84,6 @@ export interface BehaviourInsight {
   text: string;
 }
 
-
 export const roomDataMap: Record<string, RoomData> = {
   "master-room": {
     id: "master",
@@ -201,39 +200,155 @@ export const roomDataMap: Record<string, RoomData> = {
 };
 
 export const usageTimeSeriesDay: UsageDataPoint[] = [
-  { time: "00:00", value: 0, isOn: false, districtAvg: 0.1, singaporeAvg: 0.15 },
-  { time: "02:00", value: 0, isOn: false, districtAvg: 0.05, singaporeAvg: 0.08 },
-  { time: "04:00", value: 0.2, isOn: true, districtAvg: 0.25, singaporeAvg: 0.3 },
-  { time: "06:00", value: 0.4, isOn: true, districtAvg: 0.35, singaporeAvg: 0.4 },
-  { time: "08:00", value: 0, isOn: false, districtAvg: 0.1, singaporeAvg: 0.12 },
-  { time: "10:00", value: 0, isOn: false, districtAvg: 0.15, singaporeAvg: 0.18 },
-  { time: "12:00", value: 0.3, isOn: true, districtAvg: 0.35, singaporeAvg: 0.4 },
-  { time: "14:00", value: 0.6, isOn: true, isSpike: true, districtAvg: 0.55, singaporeAvg: 0.6 },
-  { time: "16:00", value: 0.5, isOn: true, districtAvg: 0.5, singaporeAvg: 0.55 },
-  { time: "18:00", value: 0.2, isOn: true, districtAvg: 0.25, singaporeAvg: 0.28 },
-  { time: "20:00", value: 0.8, isOn: true, districtAvg: 0.75, singaporeAvg: 0.82 },
-  { time: "22:00", value: 0.9, isOn: true, isSpike: true, districtAvg: 0.85, singaporeAvg: 0.92 },
+  {
+    time: "00:00",
+    value: 0,
+    isOn: false,
+    districtAvg: 0.1,
+    singaporeAvg: 0.15,
+  },
+  {
+    time: "02:00",
+    value: 0,
+    isOn: false,
+    districtAvg: 0.05,
+    singaporeAvg: 0.08,
+  },
+  {
+    time: "04:00",
+    value: 0.2,
+    isOn: true,
+    districtAvg: 0.25,
+    singaporeAvg: 0.3,
+  },
+  {
+    time: "06:00",
+    value: 0.4,
+    isOn: true,
+    districtAvg: 0.35,
+    singaporeAvg: 0.4,
+  },
+  {
+    time: "08:00",
+    value: 0,
+    isOn: false,
+    districtAvg: 0.1,
+    singaporeAvg: 0.12,
+  },
+  {
+    time: "10:00",
+    value: 0,
+    isOn: false,
+    districtAvg: 0.15,
+    singaporeAvg: 0.18,
+  },
+  {
+    time: "12:00",
+    value: 0.3,
+    isOn: true,
+    districtAvg: 0.35,
+    singaporeAvg: 0.4,
+  },
+  {
+    time: "14:00",
+    value: 0.6,
+    isOn: true,
+    isSpike: true,
+    districtAvg: 0.55,
+    singaporeAvg: 0.6,
+  },
+  {
+    time: "16:00",
+    value: 0.5,
+    isOn: true,
+    districtAvg: 0.5,
+    singaporeAvg: 0.55,
+  },
+  {
+    time: "18:00",
+    value: 0.2,
+    isOn: true,
+    districtAvg: 0.25,
+    singaporeAvg: 0.28,
+  },
+  {
+    time: "20:00",
+    value: 0.8,
+    isOn: true,
+    districtAvg: 0.75,
+    singaporeAvg: 0.82,
+  },
+  {
+    time: "22:00",
+    value: 0.9,
+    isOn: true,
+    isSpike: true,
+    districtAvg: 0.85,
+    singaporeAvg: 0.92,
+  },
 ];
 
 export const usageTimeSeriesWeek: UsageDataPoint[] = [
   { time: "Mon", value: 4.2, isOn: true, districtAvg: 4.5, singaporeAvg: 4.8 },
-  { time: "Tue", value: 5.1, isOn: true, isSpike: true, districtAvg: 4.8, singaporeAvg: 5.2 },
+  {
+    time: "Tue",
+    value: 5.1,
+    isOn: true,
+    isSpike: true,
+    districtAvg: 4.8,
+    singaporeAvg: 5.2,
+  },
   { time: "Wed", value: 3.8, isOn: true, districtAvg: 4.2, singaporeAvg: 4.5 },
   { time: "Thu", value: 4.5, isOn: true, districtAvg: 4.6, singaporeAvg: 4.9 },
-  { time: "Fri", value: 6.2, isOn: true, isSpike: true, districtAvg: 5.8, singaporeAvg: 6.2 },
+  {
+    time: "Fri",
+    value: 6.2,
+    isOn: true,
+    isSpike: true,
+    districtAvg: 5.8,
+    singaporeAvg: 6.2,
+  },
   { time: "Sat", value: 5.8, isOn: true, districtAvg: 5.5, singaporeAvg: 5.9 },
   { time: "Sun", value: 4.0, isOn: true, districtAvg: 4.3, singaporeAvg: 4.6 },
 ];
 
 export const usageTimeSeriesMonth: UsageDataPoint[] = [
-  { time: "W1", value: 18.2, isOn: true, districtAvg: 19.5, singaporeAvg: 20.2 },
-  { time: "W2", value: 22.1, isOn: true, isSpike: true, districtAvg: 21.0, singaporeAvg: 22.5 },
-  { time: "W3", value: 19.5, isOn: true, districtAvg: 20.2, singaporeAvg: 21.0 },
-  { time: "W4", value: 21.0, isOn: true, districtAvg: 20.8, singaporeAvg: 21.5 },
+  {
+    time: "Feb 10",
+    value: 18.2,
+    isOn: true,
+    districtAvg: 19.5,
+    singaporeAvg: 20.2,
+  },
+  {
+    time: "Feb 17",
+    value: 22.1,
+    isOn: true,
+    isSpike: true,
+    districtAvg: 21.0,
+    singaporeAvg: 22.5,
+  },
+  {
+    time: "Feb 24",
+    value: 19.5,
+    isOn: true,
+    districtAvg: 20.2,
+    singaporeAvg: 21.0,
+  },
+  {
+    time: "Mar 3",
+    value: 21.0,
+    isOn: true,
+    districtAvg: 20.8,
+    singaporeAvg: 21.5,
+  },
 ];
 
 /** Per-appliance behaviour summary. */
-export const behaviourSummariesByAppliance: Record<string, Record<string, BehaviourSummary>> = {
+export const behaviourSummariesByAppliance: Record<
+  string,
+  Record<string, BehaviourSummary>
+> = {
   "master-room": {
     ac: {
       mostCommonUsageTime: "8 PM – 11 PM",
@@ -320,7 +435,10 @@ export const behaviourSummaries: Record<string, BehaviourSummary> = {
 };
 
 /** Spikes per room per appliance. AC has data, others typically empty. */
-export const spikeEventsByAppliance: Record<string, Record<string, SpikeEvent[]>> = {
+export const spikeEventsByAppliance: Record<
+  string,
+  Record<string, SpikeEvent[]>
+> = {
   "master-room": {
     ac: [
       {
@@ -403,7 +521,7 @@ export const spikeEventsMap: Record<string, SpikeEvent[]> = Object.fromEntries(
   Object.entries(spikeEventsByAppliance).map(([room, apps]) => [
     room,
     Object.values(apps).flat(),
-  ])
+  ]),
 );
 
 export const comparisonDataMap: Record<string, ComparisonData> = {

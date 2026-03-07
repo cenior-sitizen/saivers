@@ -24,6 +24,30 @@ function formatKwh(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(1);
 }
 
+// Household address map — matches ClickHouse households table
+const HOUSEHOLD_NAMES: Record<number, string> = {
+  1001: "Blk 601 Punggol Drive",
+  1002: "Blk 612 Punggol Way",
+  1003: "Blk 623 Punggol Central",
+  1004: "Blk 634 Punggol Road",
+  1005: "Blk 645 Punggol Field",
+  1006: "Blk 656 Punggol Place",
+  1007: "Blk 667 Punggol Park",
+  1008: "Blk 678 Punggol East",
+  1009: "Blk 689 Punggol West",
+  1010: "Waterway Terraces I",
+};
+
+function fmtDate(iso: string): string {
+  // "2026-03-08" → "8 Mar 2026"
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-SG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default function AdminPage() {
   const [region, setRegion] = useState<RegionSummary | null>(null);
   const [grid, setGrid] = useState<GridContribution | null>(null);
@@ -83,42 +107,43 @@ export default function AdminPage() {
           heatmap.reduce<Record<string, { date: string; kwh: number }>>(
             (acc, s) => {
               const key = s.interval_date;
-              if (!acc[key]) acc[key] = { date: key.slice(5), kwh: 0 };
+              if (!acc[key]) acc[key] = { date: fmtDate(key), kwh: 0 };
               acc[key].kwh += s.total_kwh;
               return acc;
             },
-            {}
-          )
+            {},
+          ),
         ).map(([, v]) => v)
       : [];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div>
+      {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-2xl font-bold tracking-tight text-[#10363b]">
           Admin Dashboard
         </h1>
-        <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-[#6f8c91]">
           Regional energy overview — Punggol neighbourhood
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {error}. Ensure the Saivers backend is running on port 8000.
         </div>
       )}
 
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total Energy (7d)"
           value={region ? `${formatKwh(region.total_kwh)} kWh` : "—"}
           subtitle={region ? `${region.household_count} households` : undefined}
-          accent="emerald"
+          accent="teal"
         />
         <StatCard
-          title="Cost"
-          value={region ? `S$ ${region.total_cost_sgd.toFixed(2)}` : "—"}
+          title="Est. Cost"
+          value={region ? `S$${region.total_cost_sgd.toFixed(2)}` : "—"}
           subtitle={region ? "7-day period" : undefined}
           accent="sky"
         />
@@ -131,12 +156,14 @@ export default function AdminPage() {
         <StatCard
           title="Peak Reduction"
           value={
-            grid
-              ? `${grid.neighborhood_total_reduction_pct >= 0 ? "" : ""}${grid.neighborhood_total_reduction_pct.toFixed(1)}%`
-              : "—"
+            grid ? `${grid.neighborhood_total_reduction_pct.toFixed(1)}%` : "—"
           }
           subtitle={grid ? "vs 4-week baseline" : undefined}
-          accent={grid && grid.neighborhood_total_reduction_pct > 0 ? "emerald" : "zinc"}
+          accent={
+            grid && grid.neighborhood_total_reduction_pct > 0
+              ? "emerald"
+              : "zinc"
+          }
           trend={
             grid
               ? grid.neighborhood_total_reduction_pct > 0
@@ -149,8 +176,9 @@ export default function AdminPage() {
         />
       </div>
 
-      <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
-        <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+      {/* Energy trend chart */}
+      <div className="mt-6 rounded-2xl border border-[rgba(157,207,212,0.35)] bg-gradient-to-b from-white/95 to-[rgba(243,249,249,0.88)] p-6 shadow-[0_4px_16px_rgba(0,123,138,0.06)]">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">
           Daily Energy Trend (7 days)
         </h3>
         <div className="mt-4 h-64">
@@ -165,24 +193,33 @@ export default function AdminPage() {
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  className="stroke-zinc-200 dark:stroke-zinc-700"
+                  stroke="#86CCD2"
+                  strokeOpacity={0.2}
+                  vertical={false}
                 />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 12 }}
-                  className="text-zinc-500"
+                  tick={{ fontSize: 12, fill: "#6f8c91" }}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(v) => `${v} kWh`}
-                  className="text-zinc-500"
+                  tick={{ fontSize: 12, fill: "#6f8c91" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}`}
                 />
                 <Tooltip
                   contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid rgb(228 228 231)",
+                    backgroundColor: "#F3F9F9",
+                    border: "1px solid #86CCD2",
+                    borderRadius: "12px",
+                    fontSize: "12px",
                   }}
-                  formatter={(v) => [`${Number(v ?? 0).toFixed(2)} kWh`, "Usage"]}
+                  formatter={(v) => [
+                    `${Number(v ?? 0).toFixed(2)} kWh`,
+                    "Usage",
+                  ]}
                 />
                 <Area
                   type="monotone"
@@ -194,32 +231,36 @@ export default function AdminPage() {
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-full items-center justify-center text-zinc-400">
+            <div className="flex h-full items-center justify-center text-sm text-[#6f8c91]">
               No trend data — run seed scripts to populate ClickHouse
             </div>
           )}
         </div>
       </div>
 
+      {/* Household peak reduction table */}
       {grid && grid.households.length > 0 && (
-        <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+        <div className="mt-6 rounded-2xl border border-[rgba(157,207,212,0.35)] bg-gradient-to-b from-white/95 to-[rgba(243,249,249,0.88)] p-6 shadow-[0_4px_16px_rgba(0,123,138,0.06)]">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">
             Household Peak Reduction
           </h3>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                  <th className="py-2 text-left font-medium text-zinc-600 dark:text-zinc-400">
-                    Household
+                <tr className="border-b border-[rgba(157,207,212,0.35)]">
+                  <th className="py-2.5 text-left text-xs font-semibold text-[#6f8c91]">
+                    ID
                   </th>
-                  <th className="py-2 text-right font-medium text-zinc-600 dark:text-zinc-400">
+                  <th className="py-2.5 text-left text-xs font-semibold text-[#6f8c91]">
+                    Address
+                  </th>
+                  <th className="py-2.5 text-right text-xs font-semibold text-[#6f8c91]">
                     This Week
                   </th>
-                  <th className="py-2 text-right font-medium text-zinc-600 dark:text-zinc-400">
+                  <th className="py-2.5 text-right text-xs font-semibold text-[#6f8c91]">
                     Baseline
                   </th>
-                  <th className="py-2 text-right font-medium text-zinc-600 dark:text-zinc-400">
+                  <th className="py-2.5 text-right text-xs font-semibold text-[#6f8c91]">
                     Reduction
                   </th>
                 </tr>
@@ -228,24 +269,30 @@ export default function AdminPage() {
                 {grid.households.slice(0, 10).map((h) => (
                   <tr
                     key={h.household_id}
-                    className="border-b border-zinc-100 dark:border-zinc-800"
+                    className="border-b border-[rgba(157,207,212,0.18)]"
                   >
-                    <td className="py-2 font-medium">{h.household_id}</td>
-                    <td className="py-2 text-right tabular-nums">
+                    <td className="py-2.5 font-mono text-xs text-[#6f8c91]">
+                      {h.household_id}
+                    </td>
+                    <td className="py-2.5 font-medium text-[#10363b]">
+                      {HOUSEHOLD_NAMES[h.household_id] ??
+                        `Household ${h.household_id}`}
+                    </td>
+                    <td className="py-2.5 text-right tabular-nums text-[#10363b]">
                       {h.this_week_peak_kwh.toFixed(2)} kWh
                     </td>
-                    <td className="py-2 text-right tabular-nums text-zinc-500">
+                    <td className="py-2.5 text-right tabular-nums text-[#6f8c91]">
                       {h.baseline_peak_kwh.toFixed(2)} kWh
                     </td>
                     <td
-                      className={`py-2 text-right tabular-nums font-medium ${
+                      className={`py-2.5 text-right tabular-nums font-semibold ${
                         h.reduction_pct >= 0
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-amber-600 dark:text-amber-400"
+                          ? "text-emerald-600"
+                          : "text-amber-600"
                       }`}
                     >
-                      {h.reduction_pct >= 0 ? "" : "+"}
-                      {h.reduction_pct.toFixed(1)}%
+                      {h.reduction_pct >= 0 ? "−" : "+"}
+                      {Math.abs(h.reduction_pct).toFixed(1)}%
                     </td>
                   </tr>
                 ))}
