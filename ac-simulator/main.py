@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     """Startup: initialise store and launch background simulation tick."""
     init_store()
     task = asyncio.create_task(tick_loop())
-    print("[ac-simulator] Started — 40 AC units online, ticking every 5s")
+    print("[ac-simulator] Started — 80 AC units online (2 per room, 4 rooms x 10 households), ticking every 5s")
     yield
     task.cancel()
     try:
@@ -56,4 +56,4 @@ app.include_router(router)
 
 @app.get("/health", tags=["health"])
 def health() -> dict:
-    return {"status": "ok", "service": "ac-simulator", "units": 40}
+    return {"status": "ok", "service": "ac-simulator", "units": 80}

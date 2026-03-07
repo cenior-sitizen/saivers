@@ -7,7 +7,8 @@ from pydantic import BaseModel, field_validator
 class ACState(BaseModel):
     household_id: int
     room_id: str           # e.g. "living-room"
-    device_id: str         # e.g. "ac-living-room"
+    device_id: str         # e.g. "ac-living-room-1"  (unique per AC unit)
+    appliance_name: str    # e.g. "Living Room AC 1"  (human-readable label)
     is_on: bool
     temp_c: int            # current set-point (16–30°C)
     mode: str              # "cool" | "fan" | "dry"
