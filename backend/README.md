@@ -3340,3 +3340,128 @@ All three scripts are idempotent for `habit_events` and `reward_transactions` (c
 4. **(15s)** Show success toast: "WattCoach updated 8 AC units via smart home MCP"
 5. **(15s)** "Fast-forward one week" → show Monthly Report: -45.2%, 22/31 habit days
 6. **(15s)** Show Rewards tab: [███████████████████░] 480/500 — "20 more points to your S$5 voucher"
+
+---
+
+## Quick Start & All Commands Reference
+
+This section consolidates every command you need to run the backend, seed the demo, and verify it.
+
+### Prerequisites
+
+```bash
+# Install dependencies
+uv sync
+
+# Ensure environment variables are set (create .env or export directly)
+export CLICKHOUSE_HOST=<your-host>
+export CLICKHOUSE_USER=<your-user>
+export CLICKHOUSE_PASSWORD=<your-password>
+export CLICKHOUSE_DB=default
+export OPENAI_API_KEY=<your-key>
+
+# Optional: MCP mode (default is mock)
+export MCP_MODE=mock            # uses ac-simulator at localhost:8002
+# export MCP_MODE=miot          # logs Xiaomi MIoT MCP calls (for production)
+export AC_SIMULATOR_URL=http://localhost:8002
+```
+
+### 1. Start the backend server
+
+```bash
+uv run uvicorn app.main:app --reload --port 8003
+```
+
+Server auto-runs migrations on startup. Swagger docs at: `http://localhost:8003/docs`
+
+### 2. Run database migrations manually
+
+```bash
+uv run python -m app.db.migrations
+```
+
+### 3. Seed initial reward points (household 1001, 7-day streak)
+
+```bash
+uv run python scripts/seed_rewards.py
+```
+
+Seeds 7 habit events + 240 WattPoints for household 1001.
+
+### 4. Seed anomaly cases (W10: Mar 2-8) — triggers actionable recommendations
+
+```bash
+uv run python -m scripts.seed_anomaly_cases
+```
+
+**Run this before the demo.** Inserts:
+- High-usage ac_readings for Mar 8 (living room all-day 23°C, master room peak-blast 22°C)
+- sp_energy_intervals with peak-flag slots (2pm-7pm)
+- habit_events: Mar 8 achieved=False (streak break)
+- Deletes and regenerates W10 weekly recommendations → all 4 rooms flag anomalies
+
+### 5. Seed success week (W11: Mar 9-15) — shows payoff after following recommendations
+
+```bash
+uv run python -m scripts.seed_success_week
+```
+
+**Run after seed_anomaly_cases.** Inserts:
+- ac_readings W11 at higher temps, evening-only (following the applied recommendations)
+- sp_energy_intervals W11: lower household totals
+- habit_events W11: 7 × achieved=True (streak rebuilds day 1-7)
+- reward_transactions W11: 7×20pts daily + 100pt milestone = +240pts (total: 480/500 pts)
+
+### 6. Run the integration flow test (verify all APIs)
+
+```bash
+uv run python -m scripts.test_integration_flow
+```
+
+Runs 44 checks across all flows (daily/weekly/monthly/habits). Expected output: all green PASS, exit 0.
+
+### Complete Demo Setup (run in order)
+
+```bash
+# Terminal 1 — start server
+uv run uvicorn app.main:app --reload --port 8003
+
+# Terminal 2 — seed and verify
+uv run python scripts/seed_rewards.py          # initial points (if not already done)
+uv run python -m scripts.seed_anomaly_cases    # W10 anomaly week
+uv run python -m scripts.seed_success_week     # W11 success week
+uv run python -m scripts.test_integration_flow # verify all 44 checks pass
+```
+
+### All API Endpoints
+
+| Cadence | Method | Endpoint | Purpose |
+|---|---|---|---|
+| Daily | GET | `/api/devices/daily-snapshot/{hid}` | Per-room AC snapshot (bar chart data) |
+| Daily | GET | `/api/usage/weekly-bill/{hid}` | Weekly bill + 7-day chart |
+| Daily | GET | `/api/devices/rooms/{hid}` | Room status + week-over-week trend |
+| Daily | GET | `/api/insights/{hid}` | AI-powered anomaly insight cards |
+| Weekly | GET | `/api/recommendations/weekly/{hid}` | Get/generate this week's recs |
+| Weekly | POST | `/api/recommendations/apply/{hid}` | Apply selected recs via MCP |
+| Weekly | GET | `/api/recommendations/history/{hid}` | Last 4 weeks of recs |
+| Monthly | GET | `/api/reports/monthly/{hid}?year=&month=` | Full performance report |
+| Habits | GET | `/api/habits/{hid}` | Current streaks |
+| Habits | POST | `/api/habits/evaluate/{hid}` | Evaluate today + award points |
+| Habits | GET | `/api/habits/rewards/{hid}` | Points balance + voucher status |
+| Habits | POST | `/api/habits/rewards/redeem/{hid}` | Redeem points for CDC voucher |
+| Device | GET | `/api/devices/ac/status/{hid}` | AC device state |
+| Device | POST | `/api/devices/ac/schedule` | Schedule AC on/off |
+| Device | POST | `/api/devices/ac/off/{hid}` | Turn AC off immediately |
+| Health | GET | `/health` | Server health check |
+
+### Demo State Summary (after all seeds)
+
+| Flow | What to show | Key numbers |
+|---|---|---|
+| Daily snapshot | Living room 92.8 kWh, running all day 23°C | Anomaly day visible |
+| Weekly recs | 4 cards: all rooms need +1°C | Usage up 11–134% |
+| Apply recs | 8 AC units commanded via MCP | 2 units per room |
+| W11 improvement | Usage down 63.8% vs anomaly week | 113 vs 312 kWh |
+| Habit streak | `✓✓✓✓✓✓✓ ✗ ✓✓✓✓✓✓✓` | Broken + rebuilt |
+| Rewards | 480/500 pts `[███████████████████░]` | 96% to S$5 voucher |
+| Monthly March | 510 kWh (-45.2% vs Feb 930 kWh) | S$122 saved |
