@@ -22,7 +22,7 @@ export function CollapsibleAppliance({
   defaultOpen = false,
   children,
 }: CollapsibleApplianceProps): ReactElement {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+ const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#86CCD2]/30 bg-white dark:border-[#86CCD2]/20 dark:bg-zinc-900">
@@ -67,9 +67,11 @@ export function CollapsibleAppliance({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {isOpen && <div className="border-t border-[#86CCD2]/20 px-4 py-4 dark:border-[#86CCD2]/10">
-        {children}
-      </div>}
+      {isOpen && (
+        <div className="border-t border-[#86CCD2]/20 px-4 py-4 dark:border-[#86CCD2]/10">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

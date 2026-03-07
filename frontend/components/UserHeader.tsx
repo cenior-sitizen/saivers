@@ -6,55 +6,41 @@ import { HouseholdSwitcher } from "@/components/HouseholdSwitcher";
 import { useHousehold } from "@/context/HouseholdContext";
 
 export function UserHeader() {
-  const { householdId } = useHousehold();
+ const { householdId } = useHousehold();
 
-  return (
-    <header className="sticky top-0 z-10 border-b border-[#86CCD2]/20 bg-[#F3F9F9]/95 backdrop-blur dark:border-[#86CCD2]/10 dark:bg-zinc-950/95">
-      <nav className="flex items-center justify-between px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/user"
-            className="text-base font-semibold text-zinc-900 dark:text-zinc-50"
-          >
-            Saivers
-          </Link>
-          <HouseholdSwitcher />
-        </div>
-        <div className="flex items-center gap-2">
-          <NotificationBell householdId={householdId} />
-          <Link
-            href="/user/settings"
-            className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-            aria-label="Settings"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </Link>
-          <Link
-            href="/"
-            className="text-sm font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-          >
-            Home
-          </Link>
-        </div>
-      </nav>
-    </header>
-  );
+ return (
+ <header className="sticky top-0 z-10 border-b border-[rgba(157,207,212,0.30)] bg-[rgba(251,254,254,0.82)] backdrop-blur-xl">
+ {/* Thin brand accent line at top */}
+ <div className="h-[2px] w-full bg-gradient-to-r from-[#86CCD2] via-[#00A3AD] to-[#007B8A]" />
+ <nav className="flex items-center justify-between px-4 py-3 sm:px-6">
+ <div className="flex items-center gap-3">
+ <Link href="/user" className="flex items-center gap-2">
+ {/* SP Group–style energy bolt wordmark */}
+ <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#86CCD2] to-[#007B8A] shadow-[0_4px_12px_rgba(0,123,138,0.30)]">
+ <svg
+ className="h-4 w-4 text-white"
+ fill="currentColor"
+ viewBox="0 0 24 24"
+ >
+ <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+ </svg>
+ </div>
+ <span className="font-display text-base font-bold tracking-tight text-[#10363b]">
+ Saivers
+ </span>
+ </Link>
+ <HouseholdSwitcher />
+ </div>
+ <div className="flex items-center gap-1.5">
+ <NotificationBell householdId={householdId} />
+ <Link
+ href="/"
+ className="rounded-full px-3 py-1.5 text-xs font-medium text-[#4d6b70] transition-colors hover:bg-[#86CCD2]/10 hover:text-[#007B8A]"
+ >
+ Exit
+ </Link>
+ </div>
+ </nav>
+ </header>
+ );
 }

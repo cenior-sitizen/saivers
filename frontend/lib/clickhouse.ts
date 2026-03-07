@@ -20,7 +20,7 @@ export function getClickHouseClient(): ClickHouseClient {
     const host = process.env.CLICKHOUSE_HOST;
     const user = process.env.CLICKHOUSE_USER;
     const password = process.env.CLICKHOUSE_PASSWORD;
-    const database = process.env.CLICKHOUSE_DB || "default";
+    const database = process.env.CLICKHOUSE_DB || "saivers";
 
     if (!host || !user || !password) {
       throw new Error("Missing CLICKHOUSE_HOST, CLICKHOUSE_USER, or CLICKHOUSE_PASSWORD");

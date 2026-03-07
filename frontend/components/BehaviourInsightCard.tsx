@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 interface BehaviourInsightCardProps {
-  text: string;
+ text: string;
 }
 
 export function BehaviourInsightCard({ text }: BehaviourInsightCardProps): ReactElement {
