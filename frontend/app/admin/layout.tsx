@@ -15,12 +15,48 @@ export default function AdminLayout({
           >
             Energy Savings
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <Link
               href="/admin"
               className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
             >
               Dashboard
+            </Link>
+            <Link
+              href="/admin/monitoring"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Monitoring
+            </Link>
+            <Link
+              href="/admin/analytics"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Analytics
+            </Link>
+            <Link
+              href="/admin/observability"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Observability
+            </Link>
+            <Link
+              href="/admin/incidents"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Incidents
+            </Link>
+            <Link
+              href="/admin/investigation"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              AI Assistant
+            </Link>
+            <Link
+              href="/admin/recommendations"
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Recommendations
             </Link>
             <Link
               href="/admin/settings"
