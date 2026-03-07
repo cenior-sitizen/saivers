@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { RoomCard } from "@/components/RoomCard";
 import { HomeTabs } from "@/components/HomeTabs";
-import { homeRooms } from "./mockData";
+import { homeRooms } from "./mockData"; 
 
 function AirconImpactCard() {
   return (

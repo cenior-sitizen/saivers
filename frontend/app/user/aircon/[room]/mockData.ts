@@ -93,7 +93,7 @@ export const roomDataMap: Record<string, RoomData> = {
     appliances: [
       {
         id: "ac",
-        name: "Air Conditioner",
+        name: "Midea Air Conditioner",
         image: "/midea-aircon.png",
         status: "On",
         temperature: 24,
@@ -103,9 +103,9 @@ export const roomDataMap: Record<string, RoomData> = {
         trendVsPrevious: -5.2,
       },
       {
-        id: "fan",
-        name: "Smart Fan",
-        image: "/midea-aircon.png",
+        id: "mitsubishi",
+        name: "Mitsubishi Air Conditioner",
+        image: "/mitsubishi-aircon.png",
         status: "Off",
         runtimeTodayHours: 1.5,
         energyTodayKwh: 0.3,
@@ -121,7 +121,7 @@ export const roomDataMap: Record<string, RoomData> = {
     appliances: [
       {
         id: "ac",
-        name: "Air Conditioner",
+        name: "Midea Air Conditioner",
         image: "/midea-aircon.png",
         status: "Off",
         temperature: 25,
@@ -131,9 +131,9 @@ export const roomDataMap: Record<string, RoomData> = {
         trendVsPrevious: 3.1,
       },
       {
-        id: "fan",
-        name: "Smart Fan",
-        image: "/midea-aircon.png",
+        id: "mitsubishi",
+        name: "Mitsubishi Air Conditioner",
+        image: "/mitsubishi-aircon.png",
         status: "On",
         runtimeTodayHours: 2.0,
         energyTodayKwh: 0.4,
@@ -149,7 +149,7 @@ export const roomDataMap: Record<string, RoomData> = {
     appliances: [
       {
         id: "ac",
-        name: "Air Conditioner",
+        name: "Midea Air Conditioner",
         image: "/midea-aircon.png",
         status: "On",
         temperature: 23,
@@ -177,7 +177,7 @@ export const roomDataMap: Record<string, RoomData> = {
     appliances: [
       {
         id: "ac",
-        name: "Air Conditioner",
+        name: "Midea Air Conditioner",
         image: "/midea-aircon.png",
         status: "On",
         temperature: 24,
@@ -187,9 +187,9 @@ export const roomDataMap: Record<string, RoomData> = {
         trendVsPrevious: 12.0,
       },
       {
-        id: "fan",
-        name: "Smart Fan",
-        image: "/midea-aircon.png",
+        id: "mitsubishi",
+        name: "Mitsubishi Air Conditioner",
+        image: "/mitsubishi-aircon.png",
         status: "On",
         runtimeTodayHours: 3.0,
         energyTodayKwh: 0.5,
@@ -241,7 +241,7 @@ export const behaviourSummariesByAppliance: Record<string, Record<string, Behavi
       highestUsageDay: "Friday",
       avgDailyRuntime: "3.2 hours",
     },
-    fan: {
+    mitsubishi: {
       mostCommonUsageTime: "2 PM – 5 PM",
       longestRuntimePeriod: "2 hours",
       highestUsageDay: "Saturday",
@@ -255,7 +255,7 @@ export const behaviourSummariesByAppliance: Record<string, Record<string, Behavi
       highestUsageDay: "Saturday",
       avgDailyRuntime: "2.1 hours",
     },
-    fan: {
+    mitsubishi: {
       mostCommonUsageTime: "All day",
       longestRuntimePeriod: "2 hours",
       highestUsageDay: "Weekdays",
@@ -283,7 +283,7 @@ export const behaviourSummariesByAppliance: Record<string, Record<string, Behavi
       highestUsageDay: "Sunday",
       avgDailyRuntime: "5.1 hours",
     },
-    fan: {
+    mitsubishi: {
       mostCommonUsageTime: "6 PM – 9 PM",
       longestRuntimePeriod: "3 hours",
       highestUsageDay: "Weekends",
@@ -340,7 +340,7 @@ export const spikeEventsByAppliance: Record<string, Record<string, SpikeEvent[]>
         cause: "Long runtime (5+ hours)",
       },
     ],
-    fan: [],
+    mitsubishi: [],
   },
   "room-1": {
     ac: [
@@ -353,7 +353,7 @@ export const spikeEventsByAppliance: Record<string, Record<string, SpikeEvent[]>
         cause: "Peak-hour usage",
       },
     ],
-    fan: [],
+    mitsubishi: [],
   },
   "room-2": {
     ac: [
@@ -395,7 +395,7 @@ export const spikeEventsByAppliance: Record<string, Record<string, SpikeEvent[]>
         cause: "Long runtime (6+ hours)",
       },
     ],
-    fan: [],
+    mitsubishi: [],
   },
 };
 
