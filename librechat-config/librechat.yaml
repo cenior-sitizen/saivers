@@ -27,7 +27,20 @@ cache: true
 
 # Custom interface configuration
 interface:
-  customWelcome: 'Welcome to LibreChat! When querying ClickHouse, always use database "default" (not saivers).'
+  customWelcome: |
+    Welcome to the Saivers Energy Analytics AI. Use the **clickhouse-default** MCP server to query our energy database.
+
+    **Database:** Always use database "default" (not saivers).
+
+    **Key tables:**
+    - sp_energy_intervals: Raw half-hourly meter data (household_id, neighborhood_id, ts, interval_date, slot_idx, kwh, cost_sgd, carbon_kg, peak_flag)
+    - energy_features: Computed baselines & anomalies (household_id, ts, interval_date, slot_idx, baseline_kwh, excess_kwh, anomaly_score, shiftable)
+    - neighborhood_rollup: Pre-aggregated by date/slot (interval_date, slot_idx, total_kwh, active_homes)
+
+    **Example queries you can run:**
+    - "Compare this week's peak usage to last month"
+    - "Which households have the most anomalies?"
+    - "Show energy trends by region for the last 7 days"
   # Enable/disable file search as a chatarea selection (default: true)
   # Note: This setting does not disable the Agents File Search Capability.
   # To disable the Agents Capability, see the Agents Endpoint configuration instead.
