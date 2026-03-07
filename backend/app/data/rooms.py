@@ -1,5 +1,5 @@
 """
-Static room + appliance catalogue for WattCoach.
+Static room + appliance catalogue for Saivers.
 
 Each household has 4 rooms, each with one AC unit.
 device_id follows the convention "ac-{room-slug}" matching ac_readings table.

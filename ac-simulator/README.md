@@ -1,6 +1,6 @@
 # AC Simulator
 
-Standalone FastAPI server that mocks **smart air conditioner appliances** for the WattCoach app.
+Standalone FastAPI server that mocks **smart air conditioner appliances** for the Saivers app.
 
 - **Port:** 8002 (or any port you choose)
 - **Households:** 1001–1010

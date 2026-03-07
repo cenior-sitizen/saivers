@@ -102,6 +102,13 @@ export default function Home() {
             </svg>
           </Link>
         </div>
+
+        <Link
+          href="/design-system"
+          className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-2"
+        >
+          Design System
+        </Link>
       </main>
     </div>
   );

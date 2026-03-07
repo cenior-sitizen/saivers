@@ -20,6 +20,7 @@ HABITS: dict[str, dict] = {
         "description": "This week's total kWh < 95% of last week's",
         "threshold_pct": 0.95,
         "weekly_points": 50,
+        "daily_points": 50,  # alias so evaluate router can use .get("daily_points", 0)
     },
 }
 
@@ -57,6 +58,7 @@ def evaluate_daily_habits(household_id: int) -> dict:
                 """,
                 parameters={"hid": household_id},
             )
+
             peak_kwh = float(next(iter(r.named_results()))["peak_kwh"] or 0)
         except Exception:
             peak_kwh = 0.0
@@ -84,6 +86,7 @@ def evaluate_daily_habits(household_id: int) -> dict:
                 """,
                 parameters={"hid": household_id},
             )
+
             row = next(iter(r.named_results()))
             this_w = float(row["this_week"] or 0)
             last_w = float(row["last_week"] or 1)
@@ -142,6 +145,7 @@ def get_week_rate(household_id: int, habit_type: str) -> float:
             """,
             parameters={"hid": household_id, "ht": habit_type},
         )
+
         row = next(iter(r.named_results()))
         total = int(row["total_days"] or 0)
         achieved = int(row["achieved_days"] or 0)
@@ -166,6 +170,7 @@ def compute_weekly_impact(household_id: int) -> dict:
             """,
             parameters={"hid": household_id},
         )
+
         row = next(iter(r.named_results()))
         this_w = float(row["this_week"] or 0)
         baseline = float(row["baseline_week"] or 1)

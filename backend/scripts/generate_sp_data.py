@@ -1,5 +1,5 @@
 """
-Generate 43,200 SP half-hourly energy interval rows.
+Generate SP half-hourly energy interval rows.
 
 10 households x 90 days x 48 slots/day = 43,200 rows
 
@@ -9,10 +9,11 @@ Slot patterns (SGT):
   Slots 36-45  (18:00-23:00): 0.50-1.40 kWh  PEAK — AC + appliances
   Slots 46-47  (23:00-00:00): 0.10-0.20 kWh  wind-down
 
-Weekend modifier: +20% daytime; AC starts at slot 28 (14:00).
-
-ANOMALY for household 1001, last 21 days:
-  Slots 4-5 (02:00-03:00): +0.9 kWh above normal baseline
+Demo personas (all 90 days):
+  1001 Ahmad  — The Waster:   +40% baseline, AC runs midnight–4:30am every night
+  1002 Priya  — The Moderate: +5% baseline, normal AC usage
+  1003 Wei Ming — The Champion: -12% baseline, efficient AC (off by 10pm)
+  1004-1010   — Background households: default pattern
 """
 
 import random
@@ -23,12 +24,22 @@ from app.data.households import HOUSEHOLDS, NEIGHBORHOOD_ID
 _SGT = timezone(timedelta(hours=8))
 _TARIFF = 0.2911
 _CARBON = 0.402
-_PEAK_SLOTS = range(36, 46)  # slots 36-45 inclusive
-_ANOMALY_HOUSEHOLD = 1001
-_ANOMALY_SLOTS = {4, 5}
+_PEAK_SLOTS = range(36, 46)
+
+# Persona multipliers (overall kWh scaling)
+_PERSONA_MULTIPLIER: dict[int, float] = {
+    1001: 1.40,   # Waster — heavy usage
+    1002: 1.05,   # Moderate — slightly above average
+    1003: 0.88,   # Champion — efficient
+}
+
+# 1001 runs AC midnight–4:30am (slots 0–9) adding significant kWh
+_WASTER_NIGHT_SLOTS: set[int] = set(range(0, 10))
+_WASTER_NIGHT_BOOST = 1.1   # extra kWh per night slot (heavy AC)
 
 
-def _kwh_for_slot(slot_idx: int, is_weekend: bool, household_id: int, is_anomaly_period: bool) -> float:
+def _kwh_for_slot(slot_idx: int, is_weekend: bool, household_id: int) -> float:
+    # Base consumption by time-of-day
     if slot_idx <= 13:
         base = random.uniform(0.03, 0.08)
     elif slot_idx <= 35:
@@ -42,10 +53,13 @@ def _kwh_for_slot(slot_idx: int, is_weekend: bool, household_id: int, is_anomaly
     else:
         base = random.uniform(0.10, 0.20)
 
-    if is_anomaly_period and household_id == _ANOMALY_HOUSEHOLD and slot_idx in _ANOMALY_SLOTS:
-        base += 0.9
+    # Waster: heavy AC running at night
+    if household_id == 1001 and slot_idx in _WASTER_NIGHT_SLOTS:
+        base += _WASTER_NIGHT_BOOST
 
-    return round(base, 3)
+    # Apply persona multiplier
+    multiplier = _PERSONA_MULTIPLIER.get(household_id, 1.0)
+    return round(base * multiplier, 3)
 
 
 def generate_sp_data() -> list[dict]:
@@ -60,11 +74,10 @@ def generate_sp_data() -> list[dict]:
         for day_offset in range(90):
             day = start_date + timedelta(days=day_offset)
             is_weekend = day.weekday() >= 5
-            is_anomaly_period = day_offset >= 69  # last 21 days of 90
             for slot in range(48):
                 hours, mins = divmod(slot * 30, 60)
                 ts = day.replace(hour=hours, minute=mins)
-                kwh = _kwh_for_slot(slot, is_weekend, hid, is_anomaly_period)
+                kwh = _kwh_for_slot(slot, is_weekend, hid)
                 rows.append(
                     {
                         "household_id": hid,

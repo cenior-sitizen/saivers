@@ -1,4 +1,4 @@
-# WattCoach — SP Group AI Energy Behaviour Change
+# Saivers — SP Group AI Energy Behaviour Change
 ## Product Requirements Document (PRD) v1
 
 > Generated via all-plan (designer + Codex research + reviewer)
@@ -9,13 +9,13 @@
 
 ## Executive Summary
 
-**Product Name**: WattCoach
+**Product Name**: Saivers
 
 **Tagline**: "Your AI energy coach — turning half-hourly data into daily habits that help the grid."
 
-**Core Pitch**: WattCoach is an explainable AI demand-response coach built on SP Group's half-hourly electricity data. It transforms raw interval data into a personalised, measurable behaviour-change loop — not a prettier dashboard, but a **next-best-action engine** that closes the loop from data to action to verified outcome.
+**Core Pitch**: Saivers is an explainable AI demand-response coach built on SP Group's half-hourly electricity data. It transforms raw interval data into a personalised, measurable behaviour-change loop — not a prettier dashboard, but a **next-best-action engine** that closes the loop from data to action to verified outcome.
 
-**Why we win**: Every existing solution (OhmConnect, Sense, Nest, SP App) shows data. None of them closes the loop with explainable, verified behaviour change tied to grid-level impact. WattCoach does exactly that, in language a Senior Data Scientist in demand response will immediately recognise as credible.
+**Why we win**: Every existing solution (OhmConnect, Sense, Nest, SP App) shows data. None of them closes the loop with explainable, verified behaviour change tied to grid-level impact. Saivers does exactly that, in language a Senior Data Scientist in demand response will immediately recognise as credible.
 
 ---
 
@@ -23,7 +23,7 @@
 
 The SP App already provides half-hourly electricity data. The gap is not data access — it is **data translation**:
 
-| Pain Point | Current Reality | WattCoach Fix |
+| Pain Point | Current Reality | Saivers Fix |
 |---|---|---|
 | Users see numbers, not meaning | 380.7 kWh/month for 4-room HDB with no context | Plain-language explanation of what drove usage |
 | No actionable next step | "Here is your peak usage" with no guidance | "Run your washer after 11pm — saves S$8/month" |
@@ -69,7 +69,7 @@ The SP App already provides half-hourly electricity data. The gap is not data ac
 
 ---
 
-## Solution: WattCoach
+## Solution: Saivers
 
 ### Core Philosophy
 > Not a dashboard. A **next-best-action engine** with closed-loop verification.
@@ -94,7 +94,7 @@ Layer 3: Behaviour Change Loop (Frontend)
 
 #### Feature 1: Proactive AI Energy Coach (Active, Not Passive)
 
-WattCoach does not wait for the user to ask questions. It monitors half-hourly data and **proactively surfaces insights** when something important is detected.
+Saivers does not wait for the user to ask questions. It monitors half-hourly data and **proactively surfaces insights** when something important is detected.
 
 **Proactive Trigger Engine** (3 triggers for demo):
 ```typescript
@@ -173,7 +173,7 @@ interface ProactiveInsight {
 
 #### Feature 4: Estimated Appliance Breakdown (NEW)
 
-SP App shows only total half-hourly usage. WattCoach adds estimated per-appliance breakdown using pattern heuristics.
+SP App shows only total half-hourly usage. Saivers adds estimated per-appliance breakdown using pattern heuristics.
 
 **Singapore HDB Heuristics** (always labeled "estimated"):
 
@@ -511,7 +511,7 @@ export async function GET(request: Request) {
 ```
 
 ### ClickHouse Special Challenge Positioning
-| What ClickHouse Judges Look For | How WattCoach Delivers |
+| What ClickHouse Judges Look For | How Saivers Delivers |
 |---|---|
 | Clear fit for ClickHouse | Half-hourly time-series energy data — textbook ClickHouse use case |
 | Visible scale | 43.2M rows, not a toy dataset |
@@ -525,7 +525,7 @@ If time allows, emit OpenTelemetry events to HyperDX to track:
 - `recommendation_shown` → `recommendation_accepted` → `recommendation_followed` → `impact_verified`
 - Claude API latency per query
 - ClickHouse query latency per endpoint
-- This demonstrates WattCoach is "production-instrumented" — bonus for engineering quality judges
+- This demonstrates Saivers is "production-instrumented" — bonus for engineering quality judges
 
 **Verdict on ClickHouse products**:
 - ClickHouse Cloud: **YES — core integration**
@@ -538,7 +538,7 @@ If time allows, emit OpenTelemetry events to HyperDX to track:
 
 ### Concept: From Recommendations to Actions
 
-WattCoach goes beyond advice. When the AI coach recommends "Set AC timer: 10pm-2am at 25°C", the user can say **"Do it"** — and WattCoach executes the schedule automatically.
+Saivers goes beyond advice. When the AI coach recommends "Set AC timer: 10pm-2am at 25°C", the user can say **"Do it"** — and Saivers executes the schedule automatically.
 
 ```
 Recommendation → User approves → Claude calls tool → Action confirmed in UI
@@ -671,7 +671,7 @@ If the team wants the explicit "MCP" story for judges:
 ### Demo Language (How to Present This Honestly)
 **SAY**: "For the demo, we use a simulated smart-home control layer exposed as tool actions via Claude's tool-use API — the same pattern as MCP. In production, this same action layer connects to real smart-home platforms like Google Home, Home Assistant, or Alexa."
 
-**SAY**: "The important point is that WattCoach doesn't stop at recommendations — it can turn an accepted recommendation into an executable household action with one tap."
+**SAY**: "The important point is that Saivers doesn't stop at recommendations — it can turn an accepted recommendation into an executable household action with one tap."
 
 **DON'T SAY**: "We integrated with Google Home" (unless you actually did)
 
@@ -765,9 +765,9 @@ Claude's role: receive structured insight objects -> generate plain-language exp
 - Answer: nothing. Raw numbers. No guidance. No proactive alerts. No appliance breakdown.
 
 **Act 2: Proactive Coach** [WOW MOMENT #1 — 2 min]
-- Open WattCoach. Notification bell shows "1 new insight"
+- Open Saivers. Notification bell shows "1 new insight"
 - After 3 seconds, banner slides in: "New insight: Your 8pm-10pm usage is projected above your usual Thursday pattern"
-- "WattCoach did not wait for Mdm Tan to ask. It found the issue on its own."
+- "Saivers did not wait for Mdm Tan to ask. It found the issue on its own."
 - Open insight: coach explains AC + laundry overlap pattern with evidence (28% above baseline)
 - Shows 3 ranked actions with S$, CO2, confidence badge
 - Mdm Tan taps "Do this for me" on the AC recommendation
@@ -779,7 +779,7 @@ Claude's role: receive structured insight objects -> generate plain-language exp
 - Live counter: "Tonight: 1.3 kWh saved · S$0.38 · 0.52 kg CO2"
 - Switch to Analysis tab — stacked bar shows: AC layer in evening, washer spike, fridge baseline
 - Monthly donut: "Estimated cooling: 42% of your usage — your biggest driver"
-- "SP App shows total kWh. WattCoach shows what is actually driving it."
+- "SP App shows total kWh. Saivers shows what is actually driving it."
 
 **Act 4: Leaderboard + Grid Hero Score (1 min)**
 - Leaderboard tab: "Mdm Tan ranks #18 of 126 — 4-room HDB homes in Toa Payoh this week"
@@ -790,14 +790,14 @@ Claude's role: receive structured insight objects -> generate plain-language exp
 **Act 5: Neighbourhood Grid View (ClickHouse)** [WOW MOMENT #3 — 2 min]
 - Switch to City Grid: "Zoom out from Mdm Tan's home to all of Toa Payoh"
 - Live ClickHouse query — 43.2M rows, returns in under 1 second
-- Peak-load heatmap: "If 15% of Toa Payoh 4-room homes act on tonight's WattCoach insight, peak demand drops by X kWh"
+- Peak-load heatmap: "If 15% of Toa Payoh 4-room homes act on tonight's Saivers insight, peak demand drops by X kWh"
 - "That is a ClickHouse materialized view running live at SP Group operating scale."
 
 **Act 6: Monthly Impact (1 min)**
 - Monthly report: "8.3% reduction, S$9.48 saved, 11.2 kg CO2 avoided this month"
 - "100,000 households doing this = 45 MW peak deferral — equivalent to a small peaker plant"
 
-**Closing**: "WattCoach is the AI layer between raw SP data and real behaviour change. Proactive. Explainable. Actionable. Verified. The full loop — closed."
+**Closing**: "Saivers is the AI layer between raw SP data and real behaviour change. Proactive. Explainable. Actionable. Verified. The full loop — closed."
 
 ---
 
@@ -805,7 +805,7 @@ Claude's role: receive structured insight objects -> generate plain-language exp
 
 ### Section 1: Hero
 - SP Group blue (#003399 or similar) + SP Group aesthetic
-- Title: "WattCoach"
+- Title: "Saivers"
 - Subtitle: "AI-powered energy behaviour coach for Singapore households"
 - SP Group + HackOMania 2026 branding
 
@@ -1002,7 +1002,7 @@ const IMPACT_REPORT = {
 
 ## SP "What Success Looks Like" — Full Alignment
 
-| SP Success Criterion | WattCoach Feature | Status |
+| SP Success Criterion | Saivers Feature | Status |
 |---|---|---|
 | **1. Make Energy Data Easy to Understand** | | |
 | Explain half-hourly usage patterns | Proactive insight coach + stacked bar chart | ✓ |
@@ -1039,7 +1039,7 @@ Next day: "Did you follow through?" → Outcome tracked → Habit reinforced →
 ## Judging Criteria Alignment
 
 ### SP Group Track
-| Criterion | Weight | How WattCoach Delivers |
+| Criterion | Weight | How Saivers Delivers |
 |---|---|---|
 | Impact | 30% | Demonstrated S$ savings, CO2 avoided, peak kW reduced — grounded in real Singapore tariff and emission data. 100K household extrapolation = 45 MW peak deferral. |
 | Relevance | 15% | Singapore HDB context, SP Group half-hourly data, real tariff (S$0.2911/kWh), NEA household profiles, demand response pilot stats. |
@@ -1047,7 +1047,7 @@ Next day: "Did you follow through?" → Outcome tracked → Habit reinforced →
 | Product Execution | 35% | Working end-to-end: real Claude API calls, live ClickHouse queries, interactive chart, before/after tracking. Judges can interact live. |
 
 ### ClickHouse Special Challenge
-| Criterion | How WattCoach Delivers |
+| Criterion | How Saivers Delivers |
 |---|---|
 | Clear fit for ClickHouse | Half-hourly time-series energy data — textbook ClickHouse use case |
 | Visible scale | 43.2M rows (5,000 households × 180 days × 48 slots) — not a toy dataset |
@@ -1060,7 +1060,7 @@ Next day: "Did you follow through?" → Outcome tracked → Habit reinforced →
 
 ## Competitive Differentiation
 
-| What others do | What WattCoach does differently |
+| What others do | What Saivers does differently |
 |---|---|
 | Show data | Close the loop: data -> action -> verified outcome |
 | Generic tips | Interval-data-grounded, explainable recommendations |
@@ -1153,7 +1153,7 @@ Reviewer (Codex) summary: "Strong plan with clear product thesis, good Singapore
 
 ---
 
-*WattCoach — Turning half-hourly data into lasting habits that help the grid.*
+*Saivers — Turning half-hourly data into lasting habits that help the grid.*
 
 ---
 
@@ -1881,3 +1881,671 @@ Example: `http://localhost:8000/api/usage/weekly-bill/1001`
 See the **Weekly Bill Endpoint** section above for the full response shape and field mapping.
 
 ---
+
+---
+
+### 2026-03-07 — Reward System: Points & CDC Vouchers
+
+**What we added / fixed:**
+
+End-to-end reward points and CDC voucher redemption flow — habit evaluation, ledger, and frontend API contract.
+
+---
+
+## Reward System
+
+### How Points Work
+
+Users earn points by achieving energy-saving habits. The backend tracks two habit types:
+
+| Habit | Trigger | Points |
+|---|---|---|
+| `offpeak_ac` | AC usage < 0.3 kWh during 7pm–11pm peak window | 20 pts/day |
+| `weekly_reduction` | This week's total kWh < 95% of last week's | 50 pts/week |
+| Streak milestone (7 days) | 7 consecutive offpeak_ac days | +100 bonus |
+| Streak milestone (14 days) | 14 consecutive offpeak_ac days | +250 bonus |
+| Streak milestone (30 days) | 30 consecutive days | +500 bonus |
+
+**Voucher threshold:** 500 points = S$5 CDC voucher.
+
+Points are stored as an **append-only ledger** in `reward_transactions`. Balance is always computed as `SUM(points_earned)`. Voucher redemptions append a **negative** row (−500 pts) — no rows are ever updated or deleted.
+
+---
+
+## Reward Endpoints (All Verified ✓)
+
+### GET `/api/habits/{household_id}`
+Current habit streaks and this-week rate.
+
+```bash
+curl http://localhost:8000/api/habits/1001
+```
+
+```json
+{
+  "offpeak_ac": {
+    "streak_days": 7,
+    "today_achieved": false,
+    "this_week_rate": 1.0
+  },
+  "weekly_reduction": {
+    "streak_days": 0,
+    "today_achieved": false,
+    "this_week_rate": 0.0
+  }
+}
+```
+
+---
+
+### POST `/api/habits/evaluate/{household_id}`
+Evaluate today's habits against real ClickHouse data and award points.
+
+```bash
+curl -X POST http://localhost:8000/api/habits/evaluate/1001
+```
+
+```json
+{
+  "household_id": 1001,
+  "evaluation": {
+    "offpeak_ac": { "achieved": false, "actual_kwh": 26.809, "threshold_kwh": 0.3 },
+    "weekly_reduction": { "achieved": false, "this_week_kwh": 273.26, "last_week_kwh": 246.27 }
+  },
+  "points_awarded": [],
+  "new_balance": 240,
+  "points_to_voucher": 260
+}
+```
+
+When a habit is achieved, `points_awarded` contains the entries and `new_balance` reflects the updated total.
+
+---
+
+### GET `/api/habits/rewards/{household_id}`
+Full rewards dashboard — balance, voucher status, history, and redeemed vouchers.
+
+```bash
+curl http://localhost:8000/api/habits/rewards/1001
+```
+
+```json
+{
+  "points_balance": 240,
+  "points_to_next_voucher": 260,
+  "vouchers_available": 0,
+  "can_redeem": false,
+  "voucher_value_sgd": 5.0,
+  "voucher_threshold": 500,
+  "redeemed_vouchers": [],
+  "history": [
+    { "date": "2026-03-07", "points": 100, "reason": "Streak milestone: 7 days!" },
+    { "date": "2026-03-07", "points": 20,  "reason": "Off-peak AC — streak day 7" }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `points_balance` | int | Current point total |
+| `points_to_next_voucher` | int | Points needed to reach next voucher |
+| `vouchers_available` | int | How many vouchers can be redeemed now |
+| `can_redeem` | bool | `true` when balance ≥ 500 |
+| `voucher_value_sgd` | float | Always 5.0 (S$5 CDC voucher) |
+| `voucher_threshold` | int | Always 500 |
+| `redeemed_vouchers` | array | All past redemptions (dedicated query, not capped) |
+| `history` | array | Positive-point earn events (last 20) |
+
+---
+
+### POST `/api/habits/rewards/redeem/{household_id}`
+Redeem 500 points for a mock CDC voucher.
+
+```bash
+curl -X POST http://localhost:8000/api/habits/rewards/redeem/1001
+```
+
+**Success (balance ≥ 500):**
+```json
+{
+  "success": true,
+  "voucher_code": "CDC-1001-2026",
+  "message": "S$5 CDC voucher issued: CDC-1001-2026",
+  "points_deducted": 500,
+  "new_balance": 0
+}
+```
+
+**Failure (not enough points):**
+```json
+{
+  "success": false,
+  "message": "Need 500 points, have 240",
+  "balance": 240
+}
+```
+
+---
+
+### GET `/api/habits/{household_id}/impact`
+Weekly energy impact (kWh/SGD/CO2 saved) with AI motivational summary.
+
+```bash
+curl http://localhost:8000/api/habits/1001/impact
+```
+
+```json
+{
+  "kwh_saved": 0.0,
+  "sgd_saved": 0.0,
+  "co2_saved": 0.0,
+  "reduction_pct": 0.0,
+  "ai_summary": "Ahmad, every small step counts..."
+}
+```
+
+---
+
+## Frontend Integration
+
+### Recommended component mapping
+
+```ts
+// 1. Load rewards dashboard
+const res = await fetch("http://localhost:8000/api/habits/rewards/1001");
+const data = await res.json();
+
+// 2. Points progress bar
+const pct = Math.min(100, (data.points_balance / data.voucher_threshold) * 100);
+
+// 3. Redeem button — only show when can_redeem is true
+if (data.can_redeem) {
+  // show "Redeem S$5 CDC Voucher" button
+}
+
+// 4. Redeem action
+const redeem = await fetch("http://localhost:8000/api/habits/rewards/redeem/1001", {
+  method: "POST"
+});
+const result = await redeem.json();
+if (result.success) {
+  alert(`Voucher issued: ${result.voucher_code}`);
+  // refresh rewards data
+}
+
+// 5. Show redeemed vouchers list
+data.redeemed_vouchers.forEach(v => {
+  // v.date, v.voucher_code, v.value_sgd
+});
+```
+
+---
+
+## How Points Update with Real-Time Data Ingestion
+
+When energy data is ingested every 30 minutes (via `scripts/simulate_realtime.py`), the question is: **how do points get awarded without the frontend calling `/evaluate` manually?**
+
+Codex verified three options, ranked by hackathon complexity:
+
+---
+
+### Option 1 — Ingest script calls evaluate (Recommended for hackathon)
+
+**How it works:** After each batch write to ClickHouse, `simulate_realtime.py` calls `evaluate_daily_habits()` internally (or hits `POST /api/habits/evaluate/{household_id}`).
+
+```python
+# In simulate_realtime.py, after inserting each batch:
+import requests
+for hid in HOUSEHOLD_IDS:
+    requests.post(f"http://localhost:8000/api/habits/evaluate/{hid}")
+```
+
+**Frontend impact:** None. Just call `GET /api/habits/rewards/{household_id}` on page load or refresh — points are already materialized.
+
+**Critical requirement:** Add idempotency — before awarding, check if today's habit was already evaluated:
+```python
+# In habit_service.py, before record_habit_event():
+existing = client.query(
+    "SELECT count() FROM habit_events WHERE household_id={hid} AND habit_type={ht} AND event_date=today()",
+    ...
+)
+if list(existing.named_results())[0]["count()"] > 0:
+    continue  # already evaluated today
+```
+
+**Pros:** Simplest, guaranteed fresh on every read.
+**Cons:** Ingest script is coupled to backend URL.
+
+---
+
+### Option 2 — FastAPI background evaluator loop (Most production-like)
+
+**How it works:** Add an asyncio background loop in `main.py` (same pattern as the AC simulator's `tick_loop`). Every few minutes, it evaluates all households and awards points if new data exists.
+
+```python
+# In main.py lifespan:
+async def habit_eval_loop():
+    while True:
+        await asyncio.sleep(300)  # every 5 minutes
+        for hid in HOUSEHOLD_IDS:
+            evaluation = evaluate_daily_habits(hid)
+            # award points with idempotency check
+
+task2 = asyncio.create_task(habit_eval_loop())
+```
+
+**Frontend impact:** None — same `GET /api/habits/rewards/{household_id}`. Points may lag up to 5 minutes after ingest.
+
+**Pros:** No coupling to ingest script, clean separation of concerns, production-like.
+**Cons:** Needs idempotency guard to avoid double-awarding on every loop tick.
+
+---
+
+### Option 3 — Lazy evaluation on GET (Fastest to implement)
+
+**How it works:** The `GET /api/habits/rewards/{household_id}` endpoint automatically calls `evaluate_daily_habits()` before returning if today hasn't been evaluated yet.
+
+**Frontend impact:** None — but first load after midnight may be slightly slower.
+
+**Pros:** Zero extra code, no scheduler.
+**Cons:** Mixes reads and writes, harder to reason about, risk of duplicates without careful guards.
+
+---
+
+### Idempotency Guard (Required for Options 1 & 2)
+
+No matter which option you choose, you **must** prevent double-awarding. The recommended guard pattern:
+
+```python
+# Before awarding: check if already evaluated today
+r = client.query(
+    """
+    SELECT count() AS cnt
+    FROM habit_events
+    WHERE household_id = {hid:UInt32}
+      AND habit_type   = {ht:String}
+      AND event_date   = today()
+    """,
+    parameters={"hid": household_id, "ht": habit_type},
+)
+already_done = int(list(r.named_results())[0]["cnt"]) > 0
+if already_done:
+    continue
+```
+
+For `weekly_reduction`, use `toISOWeek(event_date) = toISOWeek(today())` instead of `event_date = today()`.
+
+---
+
+### Summary for Frontend Team
+
+| Scenario | What frontend does |
+|---|---|
+| Page load | `GET /api/habits/rewards/{household_id}` — always returns current balance |
+| After AC control action | Optionally call `POST /api/habits/evaluate/{household_id}` for immediate feedback |
+| Redeem button | Check `can_redeem: true`, then `POST /api/habits/rewards/redeem/{household_id}` |
+| Show voucher history | `redeemed_vouchers[]` in rewards response — always complete, not paginated |
+| Points progress bar | `points_balance / voucher_threshold * 100` |
+
+**The frontend never needs to understand ingestion timing** — just refresh the rewards endpoint and the balance will reflect the latest state.
+
+
+---
+
+## MCP Device Communication + Weekly AI Recommendations — Implementation Plan
+
+> Review score: **8.4/10** (Codex Rubric A, round 2) | Readiness: 88/100 | Date: 2026-03-08
+
+### Goal
+
+Add MCP communication layer + daily snapshot + weekly AI per-device recommendations with user-approve-then-apply flow. Monthly report is a **stretch goal**.
+
+### Scope
+
+**Core (must ship):** MCP client · weekly AI recs · user-approve apply flow · daily snapshot  
+**Stretch:** Monthly performance report with neighbourhood comparison
+
+### New Files & Changes
+
+| Action | Path | Purpose |
+|---|---|---|
+| New | `app/services/mcp_client.py` | MCPClient — mock ↔ miot abstraction |
+| New | `app/services/recommendation_service.py` | Weekly rec generation + apply |
+| New | `app/routers/recommendations.py` | REST endpoints |
+| New | `app/routers/reports.py` (stretch) | Monthly report |
+| New | `app/services/monthly_report_service.py` (stretch) | Monthly report logic |
+| Modify | `app/db/migrations.py` | 2 new tables |
+| Modify | `app/routers/devices.py` | Add daily snapshot endpoint |
+| Modify | `app/main.py` | Mount new routers |
+
+### Device Identity Mapping
+
+ClickHouse `ac_readings` uses room-level IDs. ac-simulator uses unit-level IDs. The `MCPClient` bridges them:
+
+```python
+SIMULATOR_DEVICE_MAP = {
+    "ac-living-room": ["ac-living-room-1", "ac-living-room-2"],
+    "ac-master-room": ["ac-master-room-1", "ac-master-room-2"],
+    "ac-room-1":      ["ac-room-1-unit-1", "ac-room-1-unit-2"],
+    "ac-room-2":      ["ac-room-2-unit-1", "ac-room-2-unit-2"],
+}
+```
+
+Recommendations are generated from ClickHouse (room-level). Applying one recommendation commands both simulator units for that room.
+
+### New ClickHouse Tables
+
+**`weekly_recommendations`** — stores AI-generated recs, idempotent per ISO week:
+```sql
+household_id UInt32, iso_week LowCardinality(String), rec_id String,
+device_id LowCardinality(String), current_temp UInt8, rec_temp UInt8,
+current_mode LowCardinality(String), rec_mode LowCardinality(String),
+reason String, ai_summary String DEFAULT '', created_at DateTime DEFAULT now()
+ENGINE = MergeTree ORDER BY (household_id, iso_week, rec_id)
+```
+
+**`applied_recommendations`** — append-only idempotency source:
+```sql
+household_id UInt32, rec_id String, action_id String,
+applied_at DateTime DEFAULT now(), new_temp UInt8, new_mode LowCardinality(String)
+ENGINE = MergeTree ORDER BY (household_id, rec_id, applied_at)
+```
+
+### New Endpoints
+
+```
+GET  /api/devices/daily-snapshot/{household_id}
+     → [{device_id, kwh_today, runtime_hours, avg_temp_c, is_on_now}] — 4 rows always
+
+GET  /api/recommendations/weekly/{household_id}
+     → [{rec_id, device_id, device_name, current_temp, rec_temp,
+          current_mode, rec_mode, reason, already_applied}]
+
+POST /api/recommendations/apply/{household_id}
+     body: {"rec_ids": ["uuid1", "uuid2"]}
+     → [{rec_id, success, action_id, new_temp, new_mode, error?}] per rec
+
+GET  /api/recommendations/history/{household_id}
+     → last 4 ISO weeks with applied_count / total_count per week
+
+GET  /api/reports/monthly/{household_id}?year=2026&month=3   [STRETCH]
+     → {total_kwh, total_cost_sgd, habits_achieved_count, neighbourhood,
+         green_grid_co2_saved_kg, ai_narrative}
+```
+
+### Weekly Recommendation Flow
+
+```
+Frontend loads Saturday dashboard
+  → GET /api/recommendations/weekly/1001
+    → recommendation_service checks DB for this ISO week
+    → If empty: query ac_readings this_week vs last_week per room
+      → OpenAI structured JSON → INSERT weekly_recommendations
+      → OpenAI fallback: if usage up >10% → rec_temp = current_temp + 1
+    → Return rec list with already_applied status
+
+User reviews diff (e.g. "Living Room: 23°C → 25°C, reason: usage up 27%")
+  → POST /api/recommendations/apply/1001  {"rec_ids": ["uuid1", "uuid2"]}
+    → For each rec_id:
+        check applied_recommendations (idempotency)
+        MCPClient.apply_settings(hid, room_device_id, rec_temp, rec_mode)
+          → MCP_MODE=mock: POST /ac/1001/ac-living-room-1/on {temp_c:25, mode:"cool"}
+          → MCP_MODE=miot: log "Would call Xiaomi MIoT MCP" → return mock success
+        INSERT applied_recommendations, device_actions
+    → Return per-rec result array (partial success supported)
+```
+
+### MCP Client Modes
+
+| Mode | Behaviour | When to use |
+|---|---|---|
+| `mock` (default) | Calls ac-simulator REST on port 8002 | Development + demo |
+| `miot` | Logs intent, returns mock success | Presentation narrative ("Xiaomi MIoT MCP") |
+
+Set via env: `MCP_MODE=mock` or `MCP_MODE=miot`
+
+### Key Design Decisions
+
+- **Idempotent generation**: `get_or_generate_weekly_recs()` checks DB first — OpenAI is only called once per ISO week per household
+- **Idempotent apply**: `applied_recommendations` is checked before every apply — duplicate POSTs return `{already_applied: true}`
+- **Partial success**: applying multiple `rec_ids` returns per-rec results — one failure never blocks others
+- **Fan-out logging**: one room-level apply creates two `device_actions` rows (one per simulator unit)
+- **OpenAI failure**: rule-based fallback — never returns 500
+
+### Acceptance Criteria
+
+- [ ] `GET /api/devices/daily-snapshot/1001` returns 4-device today kWh
+- [ ] `GET /api/recommendations/weekly/1001` returns rec list for current ISO week
+- [ ] Calling weekly endpoint twice does NOT double-insert recommendations
+- [ ] `POST /api/recommendations/apply/1001` calls ac-simulator + logs `device_actions`
+- [ ] Same `rec_id` applied twice → `{already_applied: true}` on second call
+- [ ] `MCP_MODE=mock` works; `MCP_MODE=miot` returns success without external calls
+- [ ] OpenAI failure falls back to rule-based recs (no 500)
+- [ ] Both new tables present in `migrations.py`
+
+
+---
+
+### 2026-03-08 — MCP Communication Layer + Weekly AI Recommendations
+
+**What we added:**
+
+Full pivot from direct AC device communication to an MCP abstraction layer, plus daily/weekly cadence endpoints with AI-powered per-device recommendations.
+
+---
+
+## MCP Communication Layer
+
+The backend now communicates with AC appliances through `MCPClient` — an abstraction that supports two modes:
+
+| Mode | Behaviour |
+|---|---|
+| `mock` (default) | Calls ac-simulator REST API at `AC_SIMULATOR_URL` (port 8002) |
+| `miot` | Stubs Xiaomi MIoT MCP — logs intent, returns success (presentation narrative) |
+
+Set mode via environment variable: `MCP_MODE=mock` or `MCP_MODE=miot`
+
+### Device Mapping
+
+ClickHouse stores room-level device IDs. The ac-simulator uses unit-level IDs. `MCPClient` bridges them automatically:
+
+```
+ac-living-room  →  [ac-living-room-1,  ac-living-room-2]
+ac-master-room  →  [ac-master-room-1,  ac-master-room-2]
+ac-room-1       →  [ac-room-1-unit-1,  ac-room-1-unit-2]
+ac-room-2       →  [ac-room-2-unit-1,  ac-room-2-unit-2]
+```
+
+One recommendation for a room commands **both** AC units for that room.
+
+---
+
+## New Endpoints
+
+### GET `/api/devices/daily-snapshot/{household_id}`
+
+Today's per-device usage snapshot. Frontend fetches once on page load (8am pattern — no push).
+Always returns 4 room entries, zeros if no data.
+
+```bash
+curl http://localhost:8000/api/devices/daily-snapshot/1001
+```
+
+```json
+[
+  {
+    "device_id": "ac-living-room",
+    "device_name": "Living Room AC",
+    "kwh_today": 2.4,
+    "runtime_hours": 4.5,
+    "avg_temp_c": 24.0,
+    "is_on_now": true,
+    "power_w": 1291.4
+  },
+  ...3 more rooms
+]
+```
+
+| Field | Description |
+|---|---|
+| `kwh_today` | Total kWh consumed today (from ClickHouse ac_readings) |
+| `runtime_hours` | Hours the AC ran today |
+| `avg_temp_c` | Average set temperature while on |
+| `is_on_now` | Current on/off state (ClickHouse latest reading) |
+| `power_w` | Live power draw in watts (from ac-simulator SSE; 0 if simulator offline) |
+
+---
+
+### GET `/api/recommendations/weekly/{household_id}`
+
+Returns this ISO week's AI-generated per-device recommendations.
+**Idempotent** — calling multiple times returns the same recommendations (generated once per week per household).
+
+```bash
+curl http://localhost:8000/api/recommendations/weekly/1001
+```
+
+```json
+[
+  {
+    "rec_id": "191e41f7-...",
+    "device_id": "ac-living-room",
+    "device_name": "Living Room AC",
+    "current_temp": 25,
+    "rec_temp": 27,
+    "current_mode": "cool",
+    "rec_mode": "cool",
+    "reason": "Usage up 15% vs last week. Raising set-point by 2°C reduces power draw ~10%.",
+    "already_applied": false
+  },
+  ...3 more rooms
+]
+```
+
+**Generation logic:**
+1. Check ClickHouse for this ISO week — return cached if exists
+2. Query `ac_readings`: this-week vs last-week kWh + avg temp per room
+3. OpenAI GPT-4o generates structured per-device recommendations
+4. Fallback (if OpenAI fails): rule-based — usage up >10% → raise temp 1°C
+
+---
+
+### POST `/api/recommendations/apply/{household_id}`
+
+User approves selected recommendations → backend applies via MCP → AC units updated.
+
+```bash
+curl -X POST http://localhost:8000/api/recommendations/apply/1001 \
+  -H "Content-Type: application/json" \
+  -d '{"rec_ids": ["191e41f7-...", "21a1eacb-..."]}'
+```
+
+```json
+[
+  {
+    "success": true,
+    "partial": false,
+    "rec_id": "191e41f7-...",
+    "device_id": "ac-living-room",
+    "action_id": "ACT-1001-191e41f7",
+    "new_temp": 27,
+    "new_mode": "cool",
+    "units": [
+      {"device_id": "ac-living-room-1", "success": true},
+      {"device_id": "ac-living-room-2", "success": true}
+    ]
+  }
+]
+```
+
+**Key behaviours:**
+- `already_applied: true` returned if same `rec_id` is posted again (idempotent)
+- Partial success: if one simulator unit fails, `partial: true` — the other unit's apply still succeeds
+- Each rec commands **both** AC units for that room via MCP fan-out
+
+---
+
+### GET `/api/recommendations/history/{household_id}`
+
+Last 4 weeks of recommendations with applied counts.
+
+```bash
+curl http://localhost:8000/api/recommendations/history/1001
+```
+
+```json
+[
+  {
+    "iso_week": "2026-W10",
+    "recommendations": [...],
+    "applied_count": 3,
+    "total_count": 4
+  }
+]
+```
+
+---
+
+## Frontend Integration Guide
+
+### Daily graph (8am fetch pattern)
+
+```ts
+// Fetch once on page load — no polling needed
+const snapshot = await fetch("http://localhost:8000/api/devices/daily-snapshot/1001")
+  .then(r => r.json());
+
+// Map to chart data
+snapshot.forEach(device => {
+  // device.device_id, device.kwh_today, device.runtime_hours, device.power_w
+});
+```
+
+### Weekly recommendations (Saturday dashboard)
+
+```ts
+// 1. Load this week's recommendations
+const recs = await fetch("http://localhost:8000/api/recommendations/weekly/1001")
+  .then(r => r.json());
+
+// 2. Show diff cards: current_temp → rec_temp, current_mode → rec_mode
+// 3. User selects which recs to apply
+
+// 4. Apply approved recommendations
+const selectedIds = recs
+  .filter(r => !r.already_applied && userApproved(r.rec_id))
+  .map(r => r.rec_id);
+
+const results = await fetch("http://localhost:8000/api/recommendations/apply/1001", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({rec_ids: selectedIds})
+}).then(r => r.json());
+
+// 5. results[i].success → show success/failure per device
+// 6. Refresh recommendations to see already_applied: true
+```
+
+---
+
+## New ClickHouse Tables
+
+Two new tables added to `app/db/migrations.py` (run automatically on server start):
+
+**`weekly_recommendations`** — AI-generated recs, one set per household per ISO week  
+**`applied_recommendations`** — Append-only log of accepted recommendations (idempotency source)
+
+Run migrations manually:
+```bash
+uv run python -m app.db.migrations
+```
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `MCP_MODE` | `mock` | `mock` = ac-simulator REST, `miot` = Xiaomi MIoT stub |
+| `AC_SIMULATOR_URL` | `http://localhost:8002` | ac-simulator base URL |
+
