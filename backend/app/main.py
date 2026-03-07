@@ -41,7 +41,7 @@ app.add_middleware(
 
 # Routers
 from app.routers import insights, devices, habits, admin  # noqa: E402
-from app.routers import aircon, ingest, usage, recommendations  # noqa: E402
+from app.routers import aircon, ingest, usage, recommendations, reports  # noqa: E402
 
 app.include_router(insights.router,        prefix="/api/insights",        tags=["insights"])
 app.include_router(devices.router,         prefix="/api/devices",         tags=["devices"])
@@ -51,6 +51,7 @@ app.include_router(admin.router,           prefix="/api/admin",           tags=[
 app.include_router(ingest.router,          prefix="/api/ingest",          tags=["ingest"])
 app.include_router(usage.router,           prefix="/api/usage",           tags=["usage"])
 app.include_router(recommendations.router, prefix="/api/recommendations", tags=["recommendations"])
+app.include_router(reports.router,         prefix="/api/reports",         tags=["reports"])
 
 
 @app.get("/health", tags=["health"])
