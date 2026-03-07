@@ -3,6 +3,9 @@
 /* ── SP Group × Saivers Design System ────────────────────────────────────── */
 
 :root {
+  /* Force light mode — never allow OS dark mode to override */
+  color-scheme: light;
+
   /* Brand palette — SP Group teal family */
   --brand-50:  #f3f9f9;
   --brand-100: #d9eff1;
@@ -81,6 +84,7 @@
 
 /* ── Base styles ──────────────────────────────────────────────────────────── */
 html {
+  color-scheme: light;
   font-family: var(--font-body), "Plus Jakarta Sans", system-ui, sans-serif;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -88,6 +92,7 @@ html {
 }
 
 body {
+  color-scheme: light;
   font-family: var(--font-body), "Plus Jakarta Sans", system-ui, sans-serif;
   color: var(--text-primary);
   /* Layered teal radial + tidal contour background */
