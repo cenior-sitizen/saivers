@@ -6,6 +6,7 @@ interface SpikeDetailCardProps {
   appliance: string;
   magnitude: string;
   cause: string;
+  explanation?: string;
   estimatedCostSgd?: number;
 }
 
@@ -15,8 +16,11 @@ export function SpikeDetailCard({
   appliance,
   magnitude,
   cause,
+  explanation,
   estimatedCostSgd,
 }: SpikeDetailCardProps): ReactElement {
+  const bodyText = explanation ?? cause;
+
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3">
       <div className="flex items-start justify-between gap-2">
@@ -25,7 +29,7 @@ export function SpikeDetailCard({
           <p className="mt-0.5 text-sm text-[#666666]">
             {room} • {appliance}
           </p>
-          <p className="mt-2 text-sm font-medium text-[#10363b]">{cause}</p>
+          <p className="mt-2 text-sm font-medium text-[#10363b]">{bodyText}</p>
           {estimatedCostSgd != null && (
             <p className="mt-1 text-xs text-amber-700">
               Est. cost:{" "}

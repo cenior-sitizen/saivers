@@ -8,6 +8,7 @@ export type TimeRange = "day" | "week" | "month";
 export interface ApplianceData {
   id: string;
   name: string;
+  modelNumber: string;
   image: string;
   status: "On" | "Off";
   temperature?: number;
@@ -63,6 +64,8 @@ export interface SpikeEvent {
   appliance: string;
   magnitude: string;
   cause: string;
+  /** AI-style explanation of why the spike occurred */
+  explanation?: string;
 }
 
 export interface ComparisonData {
@@ -93,6 +96,7 @@ export const roomDataMap: Record<string, RoomData> = {
       {
         id: "ac",
         name: "Midea Air Conditioner",
+        modelNumber: "MSAG-12CRN8",
         image: "/midea-aircon.png",
         status: "On",
         temperature: 24,
@@ -102,9 +106,10 @@ export const roomDataMap: Record<string, RoomData> = {
         trendVsPrevious: -5.2,
       },
       {
-        id: "mitsubishi",
-        name: "Mitsubishi Air Conditioner",
-        image: "/mitsubishi-aircon.png",
+        id: "humidifier",
+        name: "Xiaomi Humidifier",
+        modelNumber: "MJJSQ05DY",
+        image: "/xiaomi-humidifier.png",
         status: "Off",
         runtimeTodayHours: 1.5,
         energyTodayKwh: 0.3,
@@ -121,6 +126,7 @@ export const roomDataMap: Record<string, RoomData> = {
       {
         id: "ac",
         name: "Midea Air Conditioner",
+        modelNumber: "MSAG-12CRN8",
         image: "/midea-aircon.png",
         status: "Off",
         temperature: 25,
@@ -130,9 +136,10 @@ export const roomDataMap: Record<string, RoomData> = {
         trendVsPrevious: 3.1,
       },
       {
-        id: "mitsubishi",
-        name: "Mitsubishi Air Conditioner",
-        image: "/mitsubishi-aircon.png",
+        id: "humidifier",
+        name: "Xiaomi Humidifier",
+        modelNumber: "MJJSQ05DY",
+        image: "/xiaomi-humidifier.png",
         status: "On",
         runtimeTodayHours: 2.0,
         energyTodayKwh: 0.4,
@@ -149,6 +156,7 @@ export const roomDataMap: Record<string, RoomData> = {
       {
         id: "ac",
         name: "Midea Air Conditioner",
+        modelNumber: "MSAG-12CRN8",
         image: "/midea-aircon.png",
         status: "On",
         temperature: 23,
@@ -158,9 +166,10 @@ export const roomDataMap: Record<string, RoomData> = {
         trendVsPrevious: -8.0,
       },
       {
-        id: "dehumidifier",
-        name: "Dehumidifier",
-        image: "/midea-aircon.png",
+        id: "humidifier",
+        name: "Xiaomi Humidifier",
+        modelNumber: "MJJSQ05DY",
+        image: "/xiaomi-humidifier.png",
         status: "Off",
         runtimeTodayHours: 0.5,
         energyTodayKwh: 0.2,
@@ -177,6 +186,7 @@ export const roomDataMap: Record<string, RoomData> = {
       {
         id: "ac",
         name: "Midea Air Conditioner",
+        modelNumber: "MSAG-12CRN8",
         image: "/midea-aircon.png",
         status: "On",
         temperature: 24,
@@ -186,9 +196,10 @@ export const roomDataMap: Record<string, RoomData> = {
         trendVsPrevious: 12.0,
       },
       {
-        id: "mitsubishi",
-        name: "Mitsubishi Air Conditioner",
-        image: "/mitsubishi-aircon.png",
+        id: "humidifier",
+        name: "Xiaomi Humidifier",
+        modelNumber: "MJJSQ05DY",
+        image: "/xiaomi-humidifier.png",
         status: "On",
         runtimeTodayHours: 3.0,
         energyTodayKwh: 0.5,
@@ -356,7 +367,7 @@ export const behaviourSummariesByAppliance: Record<
       highestUsageDay: "Friday",
       avgDailyRuntime: "3.2 hours",
     },
-    mitsubishi: {
+    humidifier: {
       mostCommonUsageTime: "2 PM – 5 PM",
       longestRuntimePeriod: "2 hours",
       highestUsageDay: "Saturday",
@@ -370,7 +381,7 @@ export const behaviourSummariesByAppliance: Record<
       highestUsageDay: "Saturday",
       avgDailyRuntime: "2.1 hours",
     },
-    mitsubishi: {
+    humidifier: {
       mostCommonUsageTime: "All day",
       longestRuntimePeriod: "2 hours",
       highestUsageDay: "Weekdays",
@@ -384,7 +395,7 @@ export const behaviourSummariesByAppliance: Record<
       highestUsageDay: "Thursday",
       avgDailyRuntime: "4.0 hours",
     },
-    dehumidifier: {
+    humidifier: {
       mostCommonUsageTime: "Morning",
       longestRuntimePeriod: "0.5 hours",
       highestUsageDay: "N/A",
@@ -398,7 +409,7 @@ export const behaviourSummariesByAppliance: Record<
       highestUsageDay: "Sunday",
       avgDailyRuntime: "5.1 hours",
     },
-    mitsubishi: {
+    humidifier: {
       mostCommonUsageTime: "6 PM – 9 PM",
       longestRuntimePeriod: "3 hours",
       highestUsageDay: "Weekends",
@@ -448,6 +459,7 @@ export const spikeEventsByAppliance: Record<
         appliance: "Air Conditioner",
         magnitude: "+45%",
         cause: "Low temperature setting (22°C)",
+        explanation: "Based on your usage data, this spike was driven by the AC running at 22°C. Lower settings increase compressor load significantly — raising to 24°C could reduce energy use by ~15% while staying comfortable.",
       },
       {
         id: "2",
@@ -456,9 +468,10 @@ export const spikeEventsByAppliance: Record<
         appliance: "Air Conditioner",
         magnitude: "+38%",
         cause: "Long runtime (5+ hours)",
+        explanation: "I noticed the AC ran for over 5 hours in a single stretch. Extended runtime without breaks tends to push consumption higher. Consider using a timer or pre-cooling before bed to avoid overnight overuse.",
       },
     ],
-    mitsubishi: [],
+    humidifier: [],
   },
   "room-1": {
     ac: [
@@ -469,9 +482,10 @@ export const spikeEventsByAppliance: Record<
         appliance: "Air Conditioner",
         magnitude: "+52%",
         cause: "Peak-hour usage",
+        explanation: "This spike occurred during peak grid hours (7–11 PM). Electricity rates are typically higher then — shifting AC usage to after 11 PM could lower your bill and reduce grid strain.",
       },
     ],
-    mitsubishi: [],
+    humidifier: [],
   },
   "room-2": {
     ac: [
@@ -482,6 +496,7 @@ export const spikeEventsByAppliance: Record<
         appliance: "Air Conditioner",
         magnitude: "+41%",
         cause: "Sudden extended use",
+        explanation: "I detected a sudden jump in usage — likely from the AC being turned on after the room had warmed up. Pre-cooling earlier at a moderate setting can avoid these spikes.",
       },
       {
         id: "2",
@@ -490,9 +505,10 @@ export const spikeEventsByAppliance: Record<
         appliance: "Air Conditioner",
         magnitude: "+28%",
         cause: "Low temperature setting (21°C)",
+        explanation: "The 21°C setting is driving higher consumption. Each degree below 24°C can add roughly 5–8% to energy use. Try 24°C first — many find it comfortable with a fan.",
       },
     ],
-    dehumidifier: [],
+    humidifier: [],
   },
   "living-room": {
     ac: [
@@ -503,6 +519,7 @@ export const spikeEventsByAppliance: Record<
         appliance: "Air Conditioner",
         magnitude: "+55%",
         cause: "Peak-hour usage",
+        explanation: "Usage peaked during 7–11 PM, when demand and rates are highest. Running the Living Room AC before 7 PM or after 11 PM could noticeably reduce your energy costs.",
       },
       {
         id: "2",
@@ -511,9 +528,10 @@ export const spikeEventsByAppliance: Record<
         appliance: "Air Conditioner",
         magnitude: "+62%",
         cause: "Long runtime (6+ hours)",
+        explanation: "The AC ran for over 6 hours without a break. For large spaces, consider cycling the unit or using a programmable schedule to avoid sustained high load.",
       },
     ],
-    mitsubishi: [],
+    humidifier: [],
   },
 };
 
@@ -627,45 +645,45 @@ export const behaviourInsightsMap: Record<string, BehaviourInsight[]> = {
   "master-room": [
     {
       id: "1",
-      text: "You usually turn on the air conditioner between 8 PM and 11 PM",
+      text: "Based on your usage patterns, I've noticed you tend to turn on the air conditioner between 8 PM and 11 PM — consider shifting to off-peak hours (after 11 PM) to save on energy costs.",
     },
     {
       id: "2",
-      text: "Master Room shows the most spikes this month",
+      text: "My analysis shows Master Room has the most usage spikes this month. I recommend checking if the temperature is set too low — even 1°C higher can reduce energy use significantly.",
     },
   ],
   "room-1": [
     {
       id: "1",
-      text: "You usually turn on the air conditioner between 10 PM and 1 AM",
+      text: "I've observed that your AC usage typically peaks between 10 PM and 1 AM. This overlaps with peak grid hours — shifting usage earlier or later could help lower your bill.",
     },
     {
       id: "2",
-      text: "Weekend usage is higher than weekday usage",
+      text: "Looking at your data, weekend usage runs higher than weekdays. You might benefit from pre-cooling before peak hours on Saturdays and Sundays.",
     },
   ],
   "room-2": [
     {
       id: "1",
-      text: "You usually turn on the air conditioner between 9 PM and 12 AM",
+      text: "From your usage history, I see a pattern of turning on the air conditioner between 9 PM and midnight. Thursdays in particular show higher consumption — worth keeping an eye on.",
     },
     {
       id: "2",
-      text: "Thursday shows the highest usage this month",
+      text: "Thursday stands out as your highest-usage day this month. I'd suggest reviewing what's different about that day — perhaps more people at home or different routines.",
     },
   ],
   "living-room": [
     {
       id: "1",
-      text: "You usually turn on the air conditioner between 6 PM and 10 PM",
+      text: "Based on my analysis, your Living Room AC is most active between 6 PM and 10 PM. This aligns with typical evening routines — consider using a timer to avoid overnight overuse.",
     },
     {
       id: "2",
-      text: "Living Room has the most consistent usage pattern",
+      text: "Living Room shows the most consistent usage pattern across your home. That predictability could make it a good candidate for automated scheduling.",
     },
     {
       id: "3",
-      text: "Weekend usage is higher than weekday usage",
+      text: "I've noticed weekend usage runs higher here. If you're often out, a smart schedule could reduce unnecessary cooling when the room is empty.",
     },
   ],
 };

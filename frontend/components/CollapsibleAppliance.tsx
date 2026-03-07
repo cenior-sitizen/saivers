@@ -7,6 +7,7 @@ import { useState } from "react";
 interface CollapsibleApplianceProps {
   id?: string;
   name: string;
+  modelNumber?: string;
   image: string;
   status: "On" | "Off";
   defaultOpen?: boolean;
@@ -22,6 +23,7 @@ const EFFICIENCY_STYLES: Record<string, { chip: string; label: string }> = {
 
 export function CollapsibleAppliance({
   name,
+  modelNumber,
   image,
   status,
   defaultOpen = false,
@@ -58,6 +60,9 @@ export function CollapsibleAppliance({
                 </span>
               )}
             </div>
+            {modelNumber && (
+              <p className="text-xs text-[#6f8c91]">Model {modelNumber}</p>
+            )}
             <span
               className={`inline-flex items-center gap-1.5 text-xs ${
                 status === "On" ? "text-emerald-600" : "text-[#6f8c91]"
