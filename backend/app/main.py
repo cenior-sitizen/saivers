@@ -1,4 +1,4 @@
-"""WattCoach FastAPI application."""
+"""Saivers FastAPI application."""
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="WattCoach API",
+    title="Saivers API",
     description="AI-powered energy behaviour coach — HackOMania 2026",
     version="1.0.0",
     lifespan=lifespan,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# WattCoach API smoke test
+# Saivers API smoke test
 # Usage: bash scripts/smoke_test.sh [BASE_URL]
 # Default: http://localhost:8000
 
@@ -23,7 +23,7 @@ check() {
 }
 
 echo "========================================"
-echo "  WattCoach smoke test  ->  $BASE"
+echo "  Saivers smoke test  ->  $BASE"
 echo "========================================"
 
 # ── Health ────────────────────────────────────
