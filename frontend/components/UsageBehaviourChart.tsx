@@ -75,7 +75,7 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
               formatter={(value, name) => {
                 const labels: Record<string, string> = {
                   value: "You",
-                  districtAvg: "28 districts avg",
+                  districtAvg: "Paya Lebar avg",
                   singaporeAvg: "Singapore avg",
                 };
                 return [`${value ?? 0} kWh`, labels[String(name)] ?? String(name)];
@@ -87,7 +87,7 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
               formatter={(value) => {
                 const labels: Record<string, string> = {
                   value: "You",
-                  districtAvg: "28 districts avg",
+                  districtAvg: "Paya Lebar avg",
                   singaporeAvg: "Singapore avg",
                 };
                 return labels[value] ?? value;

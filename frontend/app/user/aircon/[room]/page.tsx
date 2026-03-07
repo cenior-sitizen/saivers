@@ -9,7 +9,6 @@ import { StatusSummaryCard } from "@/components/StatusSummaryCard";
 import { TimeRangeToggle, type TimeRangeOption } from "@/components/TimeRangeToggle";
 import { UsageBehaviourChart } from "@/components/UsageBehaviourChart";
 import { SpikeDetailCard } from "@/components/SpikeDetailCard";
-import { ComparisonInsightCard } from "@/components/ComparisonInsightCard";
 import { BehaviourInsightCard } from "@/components/BehaviourInsightCard";
 import { BehaviourSummaryCard } from "@/components/BehaviourSummaryCard";
 import { useHousehold } from "@/context/HouseholdContext";
@@ -198,16 +197,29 @@ export default function RoomAirconPage() {
                 }
               : appliance;
 
+          const isAc = appliance.id === "ac";
+
           return (
             <CollapsibleAppliance
               key={appliance.id}
               id={appliance.id}
               name={appliance.name}
+              modelNumber={applianceData.modelNumber}
               image={appliance.image}
               status={applianceData.status}
-              defaultOpen={appliance.id === "ac"}
+              defaultOpen={isAc}
             >
-              {/* Unified card: chart + insights together */}
+              {!isAc ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#86CCD2]/40 bg-[#F3F9F9]/50 py-12 dark:border-[#86CCD2]/20 dark:bg-[#86CCD2]/5">
+                  <p className="text-sm font-medium text-[#666666] dark:text-zinc-400">
+                    To be developed
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                    Insights & usage data coming soon
+                  </p>
+                </div>
+              ) : (
+              /* Unified card: chart + insights together */
               <div className="space-y-4">
                 <StatusSummaryCard
                   status={applianceData.status}
@@ -227,7 +239,7 @@ export default function RoomAirconPage() {
                 {/* Chart with Your vs 28 districts vs Singapore lines */}
                 <UsageBehaviourChart
                   data={chartData}
-                  title="Energy usage: You vs 28 districts vs Singapore"
+                  title="Energy usage: You vs Paya Lebar vs Singapore"
                 />
 
                 {/* Behaviour summary - right below chart */}
@@ -256,7 +268,7 @@ export default function RoomAirconPage() {
                 <div className="space-y-3 rounded-xl border border-[#86CCD2]/20 bg-[#F3F9F9]/50 p-3 dark:border-[#86CCD2]/10 dark:bg-[#86CCD2]/5">
                   {spikeEvents.length > 0 && (
                     <div>
-                      <p className="mb-2 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                         Spike explanation
                       </p>
                       <div className="space-y-2">
@@ -268,6 +280,7 @@ export default function RoomAirconPage() {
                             appliance={spike.appliance}
                             magnitude={spike.magnitude}
                             cause={spike.cause}
+                            explanation={spike.explanation}
                           />
                         ))}
                       </div>
@@ -275,26 +288,83 @@ export default function RoomAirconPage() {
                   )}
 
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                      vs last week / month
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Usage trends
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <ComparisonInsightCard
-                        label={comparisonData.vsLastWeek.label}
-                        value={comparisonData.vsLastWeek.value}
-                        isPositive={comparisonData.vsLastWeek.isPositive}
-                      />
-                      <ComparisonInsightCard
-                        label={comparisonData.vsLastMonth.label}
-                        value={comparisonData.vsLastMonth.value}
-                        isPositive={comparisonData.vsLastMonth.isPositive}
-                      />
+                    <div className="rounded-2xl border border-[#86CCD2]/20 bg-white p-4 dark:border-[#86CCD2]/10 dark:bg-zinc-900">
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                              vs last week
+                            </p>
+                            <p className={`mt-1 text-2xl font-bold tabular-nums ${
+                              comparisonData.vsLastWeek.isPositive
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-amber-600 dark:text-amber-400"
+                            }`}>
+                              {comparisonData.vsLastWeek.value}
+                            </p>
+                            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-snug">
+                              {comparisonData.vsLastWeek.label}
+                            </p>
+                          </div>
+                          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                            comparisonData.vsLastWeek.isPositive
+                              ? "bg-emerald-100 dark:bg-emerald-900/30"
+                              : "bg-amber-100 dark:bg-amber-900/30"
+                          }`}>
+                            {comparisonData.vsLastWeek.isPositive ? (
+                              <svg className="h-6 w-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
+                            ) : (
+                              <svg className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6 6" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                        <div className="border-t border-zinc-100 dark:border-zinc-800" />
+                        <div className="flex items-start gap-4">
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                              vs last month
+                            </p>
+                            <p className={`mt-1 text-2xl font-bold tabular-nums ${
+                              comparisonData.vsLastMonth.isPositive
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-amber-600 dark:text-amber-400"
+                            }`}>
+                              {comparisonData.vsLastMonth.value}
+                            </p>
+                            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-snug">
+                              {comparisonData.vsLastMonth.label}
+                            </p>
+                          </div>
+                          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                            comparisonData.vsLastMonth.isPositive
+                              ? "bg-emerald-100 dark:bg-emerald-900/30"
+                              : "bg-amber-100 dark:bg-amber-900/30"
+                          }`}>
+                            {comparisonData.vsLastMonth.isPositive ? (
+                              <svg className="h-6 w-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
+                            ) : (
+                              <svg className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6 6" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   {behaviourInsights.length > 0 && (
                     <div>
-                      <p className="mb-2 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                         Habits & insights
                       </p>
                       <div className="space-y-2">
@@ -309,6 +379,7 @@ export default function RoomAirconPage() {
                   )}
                 </div>
               </div>
+              )}
             </CollapsibleAppliance>
           );
         })}

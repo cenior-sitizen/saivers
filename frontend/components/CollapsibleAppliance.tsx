@@ -7,6 +7,7 @@ import { useState } from "react";
 interface CollapsibleApplianceProps {
   id?: string;
   name: string;
+  modelNumber?: string;
   image: string;
   status: "On" | "Off";
   defaultOpen?: boolean;
@@ -15,6 +16,7 @@ interface CollapsibleApplianceProps {
 
 export function CollapsibleAppliance({
   name,
+  modelNumber,
   image,
   status,
   defaultOpen = false,
@@ -35,6 +37,9 @@ export function CollapsibleAppliance({
           </div>
           <div>
             <p className="font-semibold text-zinc-900 dark:text-zinc-50">{name}</p>
+            {modelNumber && (
+              <p className="text-xs text-[#666666] dark:text-zinc-400">Model {modelNumber}</p>
+            )}
             <span
               className={`inline-flex items-center gap-1.5 text-xs ${
                 status === "On"
