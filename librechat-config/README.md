@@ -38,7 +38,7 @@ This folder contains the Saivers-specific LibreChat configuration for the AI Ass
 ## What's Included
 
 - **docker-compose.override.yml** – Adds the ClickHouse MCP server, mounts `librechat.yaml`, uses `frontend/.env` for credentials
-- **librechat.yaml** – MCP server config (`clickhouse-default`), custom welcome message, `socialLogins: []` for local dev
+- **librechat.yaml** – MCP server config (`clickhouse-default`), schema context in welcome (sp_energy_intervals, energy_features, neighborhood_rollup), example queries, `socialLogins: []` for local dev
 
 ## Production
 

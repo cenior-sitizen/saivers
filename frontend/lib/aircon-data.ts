@@ -17,21 +17,53 @@ const TARIFF = 0.2911;
 const RECOMMENDATIONS = [
   {
     id: "1",
-    title: "Raise set temperature by 1–2°C",
-    description:
-      "Small adjustments can reduce energy use without sacrificing comfort.",
+    title: "Raise AC temperature at bedtime",
+    estimatedSavings: "~S$15–25/month",
+    savingsRank: 2,
+    suggestion:
+      "In Xiaomi Home, create an automation: at 10pm, switch your bedroom AC to 26°C.",
+    reason:
+      "You typically turn off your lights around 10pm, suggesting you're asleep. Raising the temperature while you sleep saves energy without sacrificing comfort.",
   },
   {
     id: "2",
-    title: "Use timer mode at night",
-    description:
-      "Set the AC to turn off after you fall asleep to avoid overnight waste.",
+    title: "Turn AC off when leaving home",
+    estimatedSavings: "~S$20–35/month",
+    savingsRank: 1,
+    reason:
+      "Your AC often runs during the morning while no one is home. Turning it off when you leave avoids cooling an empty house.",
+    options: [
+      {
+        id: "2a",
+        label: "When lights turn off",
+        suggestion: "In Xiaomi Home, create an automation: when lights turn off in the morning, turn off all aircon units.",
+      },
+      {
+        id: "2b",
+        label: "When door is locked",
+        suggestion: "In Xiaomi Home, create an automation: when the smart lock indicates you've left, turn off all aircon units.",
+      },
+    ],
   },
   {
     id: "3",
-    title: "Avoid cooling unused rooms",
-    description:
-      "Keep doors closed and turn off AC in rooms you are not using.",
+    title: "Reduce cooling in unused rooms",
+    estimatedSavings: "~S$10–18/month",
+    savingsRank: 3,
+    suggestion:
+      "In Xiaomi Home, create an automation: turn off AC in Bedroom 2 and Bedroom 3 after 9pm on weeknights.",
+    reason:
+      "These rooms show minimal evening usage. Cooling them overnight wastes energy when they're unoccupied.",
+  },
+  {
+    id: "4",
+    title: "Pre-cool before peak hours end",
+    estimatedSavings: "~S$8–15/month",
+    savingsRank: 4,
+    suggestion:
+      "In Xiaomi Home, create an automation: at 4pm, reduce AC to 24°C for 1 hour, then switch to 26°C.",
+    reason:
+      "Electricity rates are higher during peak hours. Slightly pre-cooling before 5pm lets you use less AC during the peak window.",
   },
 ];
 

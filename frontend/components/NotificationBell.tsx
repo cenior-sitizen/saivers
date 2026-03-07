@@ -49,17 +49,17 @@ function formatWeek(weekStart: string): string {
  */
 function pickNextToast(
   insights: WeeklyInsight[],
-  shown: Set<string>
+  shown: Set<string>,
 ): WeeklyInsight | null {
   const eligible = insights.filter(
     (i) =>
       !shown.has(i.insight_id) &&
       i.status !== "approved" &&
-      i.status !== "dismissed"
+      i.status !== "dismissed",
   );
   // Priority: actionable (has schedule recommendation) first
   const actionable = eligible.find(
-    (i) => i.recommendation?.action === "ac_schedule"
+    (i) => i.recommendation?.action === "ac_schedule",
   );
   return actionable ?? eligible[0] ?? null;
 }
@@ -69,7 +69,9 @@ export function NotificationBell({ householdId }: { householdId: number }) {
   const [insights, setInsights] = useState<WeeklyInsight[]>([]);
   const [loading, setLoading] = useState(false);
   const [actioning, setActioning] = useState<string | null>(null);
-  const [approveResult, setApproveResult] = useState<Record<string, string>>({});
+  const [approveResult, setApproveResult] = useState<Record<string, string>>(
+    {},
+  );
 
   // Push toast state
   const [toast, setToast] = useState<WeeklyInsight | null>(null);
@@ -100,13 +102,16 @@ export function NotificationBell({ householdId }: { householdId: number }) {
       if (open) return; // don't interrupt open dropdown
       const next = pickNextToast(currentInsights, shownToastIds.current);
       if (!next) return;
-      shownToastIds.current = new Set([...shownToastIds.current, next.insight_id]);
+      shownToastIds.current = new Set([
+        ...shownToastIds.current,
+        next.insight_id,
+      ]);
       setToast(next);
       // Auto-dismiss after 15s
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => setToast(null), 15000);
     },
-    [open]
+    [open],
   );
 
   useEffect(() => {
@@ -127,7 +132,10 @@ export function NotificationBell({ householdId }: { householdId: number }) {
   // ── Close dropdown on outside click ──────────────────────────────────────
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -147,11 +155,13 @@ export function NotificationBell({ householdId }: { householdId: number }) {
     if (!unread.length) return;
     await Promise.all(
       unread.map((i) =>
-        fetch(`/api/insights/weekly/${i.insight_id}/read`, { method: "POST" }).catch(() => {})
-      )
+        fetch(`/api/insights/weekly/${i.insight_id}/read`, {
+          method: "POST",
+        }).catch(() => {}),
+      ),
     );
     setInsights((prev) =>
-      prev.map((i) => (i.status === "unread" ? { ...i, status: "read" } : i))
+      prev.map((i) => (i.status === "unread" ? { ...i, status: "read" } : i)),
     );
   }
 
@@ -168,23 +178,31 @@ export function NotificationBell({ householdId }: { householdId: number }) {
   async function handleApprove(insight: WeeklyInsight) {
     setActioning(insight.insight_id);
     try {
-      const res = await fetch(`/api/insights/weekly/${insight.insight_id}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ household_id: householdId }),
-      });
+      const res = await fetch(
+        `/api/insights/weekly/${insight.insight_id}/approve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ household_id: householdId }),
+        },
+      );
       const data = await res.json();
       setInsights((prev) =>
         prev.map((i) =>
-          i.insight_id === insight.insight_id ? { ...i, status: "approved" } : i
-        )
+          i.insight_id === insight.insight_id
+            ? { ...i, status: "approved" }
+            : i,
+        ),
       );
       const msg = data.schedule?.start_time
         ? `AC scheduled: ${data.schedule.start_time}–${data.schedule.end_time} at ${data.schedule.temp_c}°C`
         : "Recommendation applied!";
       setApproveResult((prev) => ({ ...prev, [insight.insight_id]: msg }));
     } catch {
-      setApproveResult((prev) => ({ ...prev, [insight.insight_id]: "Failed — try again" }));
+      setApproveResult((prev) => ({
+        ...prev,
+        [insight.insight_id]: "Failed — try again",
+      }));
     } finally {
       setActioning(null);
     }
@@ -193,11 +211,15 @@ export function NotificationBell({ householdId }: { householdId: number }) {
   async function handleDismiss(insight: WeeklyInsight) {
     setActioning(insight.insight_id);
     try {
-      await fetch(`/api/insights/weekly/${insight.insight_id}/dismiss`, { method: "POST" });
+      await fetch(`/api/insights/weekly/${insight.insight_id}/dismiss`, {
+        method: "POST",
+      });
       setInsights((prev) =>
         prev.map((i) =>
-          i.insight_id === insight.insight_id ? { ...i, status: "dismissed" } : i
-        )
+          i.insight_id === insight.insight_id
+            ? { ...i, status: "dismissed" }
+            : i,
+        ),
       );
     } finally {
       setActioning(null);
@@ -209,16 +231,19 @@ export function NotificationBell({ householdId }: { householdId: number }) {
     if (!toast) return;
     setToastActioning(true);
     try {
-      const res = await fetch(`/api/insights/weekly/${toast.insight_id}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ household_id: householdId }),
-      });
+      const res = await fetch(
+        `/api/insights/weekly/${toast.insight_id}/approve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ household_id: householdId }),
+        },
+      );
       const data = await res.json();
       setInsights((prev) =>
         prev.map((i) =>
-          i.insight_id === toast.insight_id ? { ...i, status: "approved" } : i
-        )
+          i.insight_id === toast.insight_id ? { ...i, status: "approved" } : i,
+        ),
       );
       const msg = data.schedule?.start_time
         ? `✓ AC scheduled: ${data.schedule.start_time}–${data.schedule.end_time} at ${data.schedule.temp_c}°C`
@@ -234,11 +259,13 @@ export function NotificationBell({ householdId }: { householdId: number }) {
     if (!toast) return;
     setToastActioning(true);
     try {
-      await fetch(`/api/insights/weekly/${toast.insight_id}/dismiss`, { method: "POST" });
+      await fetch(`/api/insights/weekly/${toast.insight_id}/dismiss`, {
+        method: "POST",
+      });
       setInsights((prev) =>
         prev.map((i) =>
-          i.insight_id === toast.insight_id ? { ...i, status: "dismissed" } : i
-        )
+          i.insight_id === toast.insight_id ? { ...i, status: "dismissed" } : i,
+        ),
       );
       dismissToast();
     } catch {
@@ -247,7 +274,9 @@ export function NotificationBell({ householdId }: { householdId: number }) {
   }
 
   const isActionable = (i: WeeklyInsight) =>
-    i.status !== "approved" && i.status !== "dismissed" && i.recommendation?.action === "ac_schedule";
+    i.status !== "approved" &&
+    i.status !== "dismissed" &&
+    i.recommendation?.action === "ac_schedule";
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -255,8 +284,12 @@ export function NotificationBell({ householdId }: { householdId: number }) {
       {/* ── Push notification toast ───────────────────────────────────────── */}
       {toast && !open && (
         <div
-          className="fixed bottom-5 left-1/2 z-[100] w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2"
-          style={{ animation: "slideUpFade 0.3s ease-out" }}
+          className="fixed left-1/2 z-[100] w-[calc(100vw-2rem)] max-w-sm"
+          style={{
+            bottom: "5.5rem",
+            transform: "translateX(-50%)",
+            animation: "slideUpFade 0.3s ease-out both",
+          }}
         >
           <div
             className={`rounded-2xl border shadow-[0_20px_50px_rgba(0,74,82,0.18)] backdrop-blur-xl ${
@@ -269,9 +302,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
             <div className="flex items-start gap-3 px-4 pb-3 pt-4">
               <div
                 className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                  isActionable(toast)
-                    ? "bg-[#E0F4F5]"
-                    : "bg-[#eef6f6]"
+                  isActionable(toast) ? "bg-[#E0F4F5]" : "bg-[#eef6f6]"
                 }`}
               >
                 <svg
@@ -301,8 +332,18 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                 className="shrink-0 rounded-full p-1 text-[#6f8c91] hover:bg-[#86CCD2]/10 hover:text-[#4d6b70]"
                 aria-label="Dismiss notification"
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -345,7 +386,12 @@ export function NotificationBell({ householdId }: { householdId: number }) {
           className={`relative rounded-full p-2 text-[#4d6b70] transition-all hover:bg-[#86CCD2]/10 hover:text-[#007B8A] ${unreadCount > 0 ? "bell-pulse" : ""}`}
           aria-label="Notifications"
         >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -362,7 +408,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
 
         {/* Dropdown */}
         {open && (
-          <div className="absolute right-0 top-11 z-50 max-h-[520px] w-[340px] overflow-y-auto rounded-2xl border border-[rgba(157,207,212,0.40)] bg-[rgba(251,254,254,0.96)] shadow-[0_24px_60px_rgba(0,74,82,0.16)] backdrop-blur-xl sm:w-[380px]">
+          <div className="absolute right-0 top-11 z-50 max-h-[75vh] w-[min(340px,calc(100vw-1rem))] overflow-y-auto rounded-2xl border border-[rgba(157,207,212,0.40)] bg-[rgba(251,254,254,0.96)] shadow-[0_24px_60px_rgba(0,74,82,0.16)] backdrop-blur-xl sm:w-[380px]">
             {/* Header */}
             <div className="sticky top-0 flex items-center justify-between border-b border-[rgba(157,207,212,0.25)] bg-[rgba(251,254,254,0.95)] px-4 py-3 backdrop-blur-xl">
               <div>
@@ -375,21 +421,36 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                   </span>
                 )}
               </div>
-              <span className="text-xs text-[#6f8c91]">{insights.length} total</span>
+              <span className="text-xs text-[#6f8c91]">
+                {insights.length} total
+              </span>
             </div>
 
             {loading && (
               <div className="space-y-3 p-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-xl bg-[#eef6f6]" />
+                  <div
+                    key={i}
+                    className="h-16 animate-pulse rounded-xl bg-[#eef6f6]"
+                  />
                 ))}
               </div>
             )}
 
             {!loading && insights.length === 0 && (
               <div className="p-8 text-center">
-                <svg className="mx-auto mb-3 h-8 w-8 text-[#86CCD2]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <svg
+                  className="mx-auto mb-3 h-8 w-8 text-[#86CCD2]/40"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
                 </svg>
                 <p className="text-sm text-[#6f8c91]">No insights yet.</p>
               </div>
@@ -400,8 +461,10 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                 const isActioning = actioning === insight.insight_id;
                 const resultMsg = approveResult[insight.insight_id];
                 const canAct =
-                  insight.status !== "approved" && insight.status !== "dismissed";
-                const hasSchedule = insight.recommendation?.action === "ac_schedule";
+                  insight.status !== "approved" &&
+                  insight.status !== "dismissed";
+                const hasSchedule =
+                  insight.recommendation?.action === "ac_schedule";
                 const rec = insight.recommendation;
 
                 return (
@@ -453,13 +516,24 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                       className="mb-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#007B8A] hover:underline"
                     >
                       View full details
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <svg
+                        className="h-3 w-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </Link>
 
                     {/* AI summary — shown for unread/read */}
-                    {(insight.status === "unread" || insight.status === "read") && (
+                    {(insight.status === "unread" ||
+                      insight.status === "read") && (
                       <div className="mb-3 rounded-xl border border-[rgba(134,204,210,0.25)] bg-[rgba(134,204,210,0.08)] px-3 py-2.5">
                         <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#86CCD2]">
                           AI Analysis
@@ -473,11 +547,22 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                     {/* Schedule detail — shown when action available */}
                     {canAct && hasSchedule && rec?.start_time && (
                       <div className="mb-3 flex items-center gap-2 rounded-xl border border-[#86CCD2]/30 bg-[#E0F4F5]/60 px-3 py-2">
-                        <svg className="h-3.5 w-3.5 shrink-0 text-[#007B8A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="h-3.5 w-3.5 shrink-0 text-[#007B8A]"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                         <p className="text-[11px] font-medium text-[#007B8A]">
-                          Schedule AC: {rec.start_time}–{rec.end_time} at {rec.temp_c}°C
+                          Schedule AC: {rec.start_time}–{rec.end_time} at{" "}
+                          {rec.temp_c}°C
                         </p>
                       </div>
                     )}
@@ -519,12 +604,20 @@ export function NotificationBell({ householdId }: { householdId: number }) {
       {/* ── CSS keyframes ─────────────────────────────────────────────────── */}
       <style>{`
         @keyframes slideUpFade {
-          from { opacity: 0; transform: translateX(-50%) translateY(16px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+          from { opacity: 0; translate: 0 16px; }
+          to   { opacity: 1; translate: 0 0; }
         }
         @keyframes shrinkWidth {
           from { width: 100%; }
           to   { width: 0%; }
+        }
+        .bell-pulse {
+          animation: bellRing 0.5s ease-out 1s 2;
+        }
+        @keyframes bellRing {
+          0%, 100% { transform: rotate(0deg); }
+          20% { transform: rotate(-15deg); }
+          60% { transform: rotate(15deg); }
         }
       `}</style>
     </>
