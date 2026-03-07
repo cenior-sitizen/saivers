@@ -1571,3 +1571,161 @@ P2 — Nice to have:
 | AC power draw | 0.6–1.2 kWh/slot (NEA estimates) |
 
 ---
+
+## Frontend Integration Guide
+
+> For the frontend team — how to connect to the live backend API.
+
+**Base URL:** `http://localhost:8000`
+**CORS:** Open (`allow_origins=["*"]`) — no auth needed.
+**Swagger docs:** `http://localhost:8000/docs`
+
+---
+
+### Weekly Bill Endpoint (NEW)
+
+```
+GET /api/usage/weekly-bill/{household_id}
+```
+
+**Example:** `curl http://localhost:8000/api/usage/weekly-bill/1001`
+
+**Response:**
+```json
+{
+  "summary_metrics": [
+    { "label": "Total Usage This Week",    "value": "235.27 kWh" },
+    { "label": "Estimated Cost This Week", "value": "S$68.49" },
+    { "label": "Saved vs Last Week",       "value": "S$2.95 saved" },
+    { "label": "Projected Monthly Cost",   "value": "S$296.56" }
+  ],
+  "weekly_comparison": {
+    "this_week_kwh":  235.27,
+    "last_week_kwh":  245.06,
+    "percent_change": -4.1,
+    "this_week_cost": "S$68.49",
+    "last_week_cost": "S$71.44"
+  },
+  "chart_data": [
+    { "label": "Sun", "value": 36.22 },
+    { "label": "Mon", "value": 31.14 },
+    { "label": "Tue", "value": 31.81 },
+    { "label": "Wed", "value": 34.41 },
+    { "label": "Thu", "value": 32.90 },
+    { "label": "Fri", "value": 33.20 },
+    { "label": "Sat", "value": 35.59 }
+  ],
+  "daily_breakdown": [
+    { "date": "2026-03-01", "day": "Sun", "kwh": 36.22, "cost_sgd": 10.54 },
+    "... 7 entries total"
+  ]
+}
+```
+
+**How to replace `mockData.ts` in aircon-impact page:**
+
+| Component | Field |
+|---|---|
+| `SummaryCard` ×4 | `summary_metrics[].label` + `.value` |
+| `ComparisonCard` | `weekly_comparison.this_week_kwh/cost`, `last_week_kwh/cost`, `percent_change` |
+| `UsageChart` | `chart_data[]` → `{label: "Mon", value: 31.1}` |
+| Daily detail | `daily_breakdown[]` → `{date, day, kwh, cost_sgd}` |
+
+```ts
+const res  = await fetch("http://localhost:8000/api/usage/weekly-bill/1001");
+const data = await res.json();
+
+// data.summary_metrics    -> SummaryCard props
+// data.weekly_comparison  -> ComparisonCard props
+// data.chart_data         -> UsageChart data prop
+// data.daily_breakdown    -> daily detail list
+```
+
+**Notes:**
+- `chart_data` always has exactly 7 entries (missing days backfilled with 0)
+- `percent_change` is negative when this week < last week (good!)
+- "Saved vs Last Week" shows `"S$X.XX more"` if usage went up
+
+---
+
+### All Available Endpoints
+
+#### Insights
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/insights/{household_id}` | Top AI insights + OpenAI explanation |
+| GET | `/api/insights/anomalies/{household_id}` | Anomaly list with scores |
+| GET | `/api/insights/weekly-comparison/{household_id}` | This week vs last week kWh |
+| GET | `/api/insights/ac-pattern/{household_id}` | AC usage pattern summary |
+| POST | `/api/insights/coach/chat` | `{"household_id": 1001, "message": "..."}` → AI reply |
+
+#### Device Control (Mock AC)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/devices/ac/status/{household_id}` | Current AC state + schedule |
+| POST | `/api/devices/ac/schedule` | `{"household_id":1001,"temp_c":24,"start_time":"22:00","end_time":"06:00"}` |
+| POST | `/api/devices/ac/off/{household_id}` | Turn AC off immediately |
+| POST | `/api/devices/ac/apply-recommendation` | `{"household_id":1001,"insight_type":"ac_night_anomaly"}` |
+
+#### Habits & Rewards
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/habits/{household_id}` | Streaks + week compliance rates |
+| POST | `/api/habits/evaluate/{household_id}` | Evaluate today + award points |
+| GET | `/api/habits/{household_id}/impact` | kWh/S$/CO2 saved + motivational summary |
+| GET | `/api/habits/rewards/{household_id}` | Points balance + vouchers |
+| POST | `/api/habits/rewards/redeem/{household_id}` | Redeem 500pts → S$5 CDC voucher |
+
+#### Admin (Punggol Region)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/admin/households` | All 10 households with today's kWh + anomaly count |
+| GET | `/api/admin/region-summary` | Punggol aggregate kWh, cost, carbon |
+| GET | `/api/admin/peak-heatmap` | Slot-level heatmap for neighbourhood |
+| GET | `/api/admin/grid-contribution` | Per-household peak reduction % vs baseline |
+
+---
+
+### Household IDs
+
+| ID | Name | Type | Notes |
+|---|---|---|---|
+| 1001 | Ahmad | 4-room HDB | **Main demo** — has AC 2am anomaly |
+| 1002 | Priya | 4-room HDB | |
+| 1003 | Wei Ming | 5-room HDB | |
+| 1004 | Siti | 4-room HDB | |
+| 1005 | Rajan | 4-room HDB | |
+| 1006 | Li Ling | 5-room HDB | |
+| 1007 | Muthu | 4-room HDB | |
+| 1008 | Xiao Hua | 5-room HDB | |
+| 1009 | Zainab | 4-room HDB | |
+| 1010 | Chandra | Condo | |
+
+---
+
+### Demo Flow (for judges)
+
+```
+1. GET  /api/insights/1001
+   → "AC ran at 2am — 7 nights", can_automate: true
+
+2. POST /api/devices/ac/apply-recommendation
+   Body: { "household_id": 1001, "insight_type": "ac_night_anomaly" }
+   → Schedule set automatically, projected savings returned
+
+3. GET  /api/devices/ac/status/1001
+   → New schedule is active
+
+4. GET  /api/usage/weekly-bill/1001
+   → Real S$ cost breakdown + 7-day chart
+
+5. POST /api/insights/coach/chat
+   Body: { "household_id": 1001, "message": "How much will I save?" }
+   → OpenAI coach responds with Ahmad's personalised savings estimate
+```
+
+---
