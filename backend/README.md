@@ -1,4 +1,4 @@
-# WattCoach — SP Group AI Energy Behaviour Change
+# Saivers — SP Group AI Energy Behaviour Change
 ## Product Requirements Document (PRD) v1
 
 > Generated via all-plan (designer + Codex research + reviewer)
@@ -9,13 +9,13 @@
 
 ## Executive Summary
 
-**Product Name**: WattCoach
+**Product Name**: Saivers
 
 **Tagline**: "Your AI energy coach — turning half-hourly data into daily habits that help the grid."
 
-**Core Pitch**: WattCoach is an explainable AI demand-response coach built on SP Group's half-hourly electricity data. It transforms raw interval data into a personalised, measurable behaviour-change loop — not a prettier dashboard, but a **next-best-action engine** that closes the loop from data to action to verified outcome.
+**Core Pitch**: Saivers is an explainable AI demand-response coach built on SP Group's half-hourly electricity data. It transforms raw interval data into a personalised, measurable behaviour-change loop — not a prettier dashboard, but a **next-best-action engine** that closes the loop from data to action to verified outcome.
 
-**Why we win**: Every existing solution (OhmConnect, Sense, Nest, SP App) shows data. None of them closes the loop with explainable, verified behaviour change tied to grid-level impact. WattCoach does exactly that, in language a Senior Data Scientist in demand response will immediately recognise as credible.
+**Why we win**: Every existing solution (OhmConnect, Sense, Nest, SP App) shows data. None of them closes the loop with explainable, verified behaviour change tied to grid-level impact. Saivers does exactly that, in language a Senior Data Scientist in demand response will immediately recognise as credible.
 
 ---
 
@@ -23,7 +23,7 @@
 
 The SP App already provides half-hourly electricity data. The gap is not data access — it is **data translation**:
 
-| Pain Point | Current Reality | WattCoach Fix |
+| Pain Point | Current Reality | Saivers Fix |
 |---|---|---|
 | Users see numbers, not meaning | 380.7 kWh/month for 4-room HDB with no context | Plain-language explanation of what drove usage |
 | No actionable next step | "Here is your peak usage" with no guidance | "Run your washer after 11pm — saves S$8/month" |
@@ -69,7 +69,7 @@ The SP App already provides half-hourly electricity data. The gap is not data ac
 
 ---
 
-## Solution: WattCoach
+## Solution: Saivers
 
 ### Core Philosophy
 > Not a dashboard. A **next-best-action engine** with closed-loop verification.
@@ -94,7 +94,7 @@ Layer 3: Behaviour Change Loop (Frontend)
 
 #### Feature 1: Proactive AI Energy Coach (Active, Not Passive)
 
-WattCoach does not wait for the user to ask questions. It monitors half-hourly data and **proactively surfaces insights** when something important is detected.
+Saivers does not wait for the user to ask questions. It monitors half-hourly data and **proactively surfaces insights** when something important is detected.
 
 **Proactive Trigger Engine** (3 triggers for demo):
 ```typescript
@@ -173,7 +173,7 @@ interface ProactiveInsight {
 
 #### Feature 4: Estimated Appliance Breakdown (NEW)
 
-SP App shows only total half-hourly usage. WattCoach adds estimated per-appliance breakdown using pattern heuristics.
+SP App shows only total half-hourly usage. Saivers adds estimated per-appliance breakdown using pattern heuristics.
 
 **Singapore HDB Heuristics** (always labeled "estimated"):
 
@@ -511,7 +511,7 @@ export async function GET(request: Request) {
 ```
 
 ### ClickHouse Special Challenge Positioning
-| What ClickHouse Judges Look For | How WattCoach Delivers |
+| What ClickHouse Judges Look For | How Saivers Delivers |
 |---|---|
 | Clear fit for ClickHouse | Half-hourly time-series energy data — textbook ClickHouse use case |
 | Visible scale | 43.2M rows, not a toy dataset |
@@ -525,7 +525,7 @@ If time allows, emit OpenTelemetry events to HyperDX to track:
 - `recommendation_shown` → `recommendation_accepted` → `recommendation_followed` → `impact_verified`
 - Claude API latency per query
 - ClickHouse query latency per endpoint
-- This demonstrates WattCoach is "production-instrumented" — bonus for engineering quality judges
+- This demonstrates Saivers is "production-instrumented" — bonus for engineering quality judges
 
 **Verdict on ClickHouse products**:
 - ClickHouse Cloud: **YES — core integration**
@@ -538,7 +538,7 @@ If time allows, emit OpenTelemetry events to HyperDX to track:
 
 ### Concept: From Recommendations to Actions
 
-WattCoach goes beyond advice. When the AI coach recommends "Set AC timer: 10pm-2am at 25°C", the user can say **"Do it"** — and WattCoach executes the schedule automatically.
+Saivers goes beyond advice. When the AI coach recommends "Set AC timer: 10pm-2am at 25°C", the user can say **"Do it"** — and Saivers executes the schedule automatically.
 
 ```
 Recommendation → User approves → Claude calls tool → Action confirmed in UI
@@ -671,7 +671,7 @@ If the team wants the explicit "MCP" story for judges:
 ### Demo Language (How to Present This Honestly)
 **SAY**: "For the demo, we use a simulated smart-home control layer exposed as tool actions via Claude's tool-use API — the same pattern as MCP. In production, this same action layer connects to real smart-home platforms like Google Home, Home Assistant, or Alexa."
 
-**SAY**: "The important point is that WattCoach doesn't stop at recommendations — it can turn an accepted recommendation into an executable household action with one tap."
+**SAY**: "The important point is that Saivers doesn't stop at recommendations — it can turn an accepted recommendation into an executable household action with one tap."
 
 **DON'T SAY**: "We integrated with Google Home" (unless you actually did)
 
@@ -765,9 +765,9 @@ Claude's role: receive structured insight objects -> generate plain-language exp
 - Answer: nothing. Raw numbers. No guidance. No proactive alerts. No appliance breakdown.
 
 **Act 2: Proactive Coach** [WOW MOMENT #1 — 2 min]
-- Open WattCoach. Notification bell shows "1 new insight"
+- Open Saivers. Notification bell shows "1 new insight"
 - After 3 seconds, banner slides in: "New insight: Your 8pm-10pm usage is projected above your usual Thursday pattern"
-- "WattCoach did not wait for Mdm Tan to ask. It found the issue on its own."
+- "Saivers did not wait for Mdm Tan to ask. It found the issue on its own."
 - Open insight: coach explains AC + laundry overlap pattern with evidence (28% above baseline)
 - Shows 3 ranked actions with S$, CO2, confidence badge
 - Mdm Tan taps "Do this for me" on the AC recommendation
@@ -779,7 +779,7 @@ Claude's role: receive structured insight objects -> generate plain-language exp
 - Live counter: "Tonight: 1.3 kWh saved · S$0.38 · 0.52 kg CO2"
 - Switch to Analysis tab — stacked bar shows: AC layer in evening, washer spike, fridge baseline
 - Monthly donut: "Estimated cooling: 42% of your usage — your biggest driver"
-- "SP App shows total kWh. WattCoach shows what is actually driving it."
+- "SP App shows total kWh. Saivers shows what is actually driving it."
 
 **Act 4: Leaderboard + Grid Hero Score (1 min)**
 - Leaderboard tab: "Mdm Tan ranks #18 of 126 — 4-room HDB homes in Toa Payoh this week"
@@ -790,14 +790,14 @@ Claude's role: receive structured insight objects -> generate plain-language exp
 **Act 5: Neighbourhood Grid View (ClickHouse)** [WOW MOMENT #3 — 2 min]
 - Switch to City Grid: "Zoom out from Mdm Tan's home to all of Toa Payoh"
 - Live ClickHouse query — 43.2M rows, returns in under 1 second
-- Peak-load heatmap: "If 15% of Toa Payoh 4-room homes act on tonight's WattCoach insight, peak demand drops by X kWh"
+- Peak-load heatmap: "If 15% of Toa Payoh 4-room homes act on tonight's Saivers insight, peak demand drops by X kWh"
 - "That is a ClickHouse materialized view running live at SP Group operating scale."
 
 **Act 6: Monthly Impact (1 min)**
 - Monthly report: "8.3% reduction, S$9.48 saved, 11.2 kg CO2 avoided this month"
 - "100,000 households doing this = 45 MW peak deferral — equivalent to a small peaker plant"
 
-**Closing**: "WattCoach is the AI layer between raw SP data and real behaviour change. Proactive. Explainable. Actionable. Verified. The full loop — closed."
+**Closing**: "Saivers is the AI layer between raw SP data and real behaviour change. Proactive. Explainable. Actionable. Verified. The full loop — closed."
 
 ---
 
@@ -805,7 +805,7 @@ Claude's role: receive structured insight objects -> generate plain-language exp
 
 ### Section 1: Hero
 - SP Group blue (#003399 or similar) + SP Group aesthetic
-- Title: "WattCoach"
+- Title: "Saivers"
 - Subtitle: "AI-powered energy behaviour coach for Singapore households"
 - SP Group + HackOMania 2026 branding
 
@@ -1002,7 +1002,7 @@ const IMPACT_REPORT = {
 
 ## SP "What Success Looks Like" — Full Alignment
 
-| SP Success Criterion | WattCoach Feature | Status |
+| SP Success Criterion | Saivers Feature | Status |
 |---|---|---|
 | **1. Make Energy Data Easy to Understand** | | |
 | Explain half-hourly usage patterns | Proactive insight coach + stacked bar chart | ✓ |
@@ -1039,7 +1039,7 @@ Next day: "Did you follow through?" → Outcome tracked → Habit reinforced →
 ## Judging Criteria Alignment
 
 ### SP Group Track
-| Criterion | Weight | How WattCoach Delivers |
+| Criterion | Weight | How Saivers Delivers |
 |---|---|---|
 | Impact | 30% | Demonstrated S$ savings, CO2 avoided, peak kW reduced — grounded in real Singapore tariff and emission data. 100K household extrapolation = 45 MW peak deferral. |
 | Relevance | 15% | Singapore HDB context, SP Group half-hourly data, real tariff (S$0.2911/kWh), NEA household profiles, demand response pilot stats. |
@@ -1047,7 +1047,7 @@ Next day: "Did you follow through?" → Outcome tracked → Habit reinforced →
 | Product Execution | 35% | Working end-to-end: real Claude API calls, live ClickHouse queries, interactive chart, before/after tracking. Judges can interact live. |
 
 ### ClickHouse Special Challenge
-| Criterion | How WattCoach Delivers |
+| Criterion | How Saivers Delivers |
 |---|---|
 | Clear fit for ClickHouse | Half-hourly time-series energy data — textbook ClickHouse use case |
 | Visible scale | 43.2M rows (5,000 households × 180 days × 48 slots) — not a toy dataset |
@@ -1060,7 +1060,7 @@ Next day: "Did you follow through?" → Outcome tracked → Habit reinforced →
 
 ## Competitive Differentiation
 
-| What others do | What WattCoach does differently |
+| What others do | What Saivers does differently |
 |---|---|
 | Show data | Close the loop: data -> action -> verified outcome |
 | Generic tips | Interval-data-grounded, explainable recommendations |
@@ -1153,7 +1153,7 @@ Reviewer (Codex) summary: "Strong plan with clear product thesis, good Singapore
 
 ---
 
-*WattCoach — Turning half-hourly data into lasting habits that help the grid.*
+*Saivers — Turning half-hourly data into lasting habits that help the grid.*
 
 ---
 

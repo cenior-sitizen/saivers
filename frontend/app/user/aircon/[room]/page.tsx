@@ -12,6 +12,7 @@ import { SpikeDetailCard } from "@/components/SpikeDetailCard";
 import { ComparisonInsightCard } from "@/components/ComparisonInsightCard";
 import { BehaviourInsightCard } from "@/components/BehaviourInsightCard";
 import { BehaviourSummaryCard } from "@/components/BehaviourSummaryCard";
+import { useHousehold } from "@/context/HouseholdContext";
 import {
   roomDataMap,
   usageTimeSeriesDay,
@@ -23,11 +24,81 @@ import {
   behaviourInsightsMap,
 } from "./mockData";
 
+interface ApprovedInsight {
+  insight_id: string;
+  notification_title: string;
+  notification_body: string;
+  week_start: string;
+  status: string;
+  recommendation: { action: string; start_time?: string; end_time?: string; temp_c?: number };
+}
+
+function ApprovedInsightBanner({ householdId }: { householdId: number }) {
+  const [insight, setInsight] = useState<ApprovedInsight | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    setInsight(null);
+    setDismissed(false);
+    fetch(`/api/insights/weekly/${householdId}`)
+      .then((r) => r.json())
+      .then((data: ApprovedInsight[]) => {
+        if (!Array.isArray(data)) return;
+        const approved = data.find(
+          (i) => i.status === "approved" && i.recommendation?.action === "ac_schedule"
+        );
+        setInsight(approved ?? null);
+      })
+      .catch(() => {});
+  }, [householdId]);
+
+  if (!insight || dismissed) return null;
+
+  const { start_time, end_time, temp_c } = insight.recommendation;
+
+  return (
+    <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800/40 dark:bg-emerald-950/20">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2.5">
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+            <svg className="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+              AI Recommendation Applied
+            </p>
+            {start_time && (
+              <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-400">
+                AC scheduled {start_time}–{end_time} at {temp_c}°C
+              </p>
+            )}
+            <p className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-500">
+              {insight.notification_title}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setDismissed(true)}
+          className="shrink-0 text-emerald-400 hover:text-emerald-600"
+          aria-label="Dismiss"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const VALID_ROOMS = ["master-room", "room-1", "room-2", "living-room"];
 
 export default function RoomAirconPage() {
   const params = useParams();
   const roomSlug = params.room as string;
+  const { householdId } = useHousehold();
 
   const [timeRange, setTimeRange] = useState<TimeRangeOption>("week");
   const [apiData, setApiData] = useState<{
@@ -105,6 +176,9 @@ export default function RoomAirconPage() {
           />
         </div>
       </div>
+
+      {/* Approved insight banner */}
+      <ApprovedInsightBanner householdId={householdId} />
 
       {/* Expandable appliance sections */}
       <div className="space-y-3">

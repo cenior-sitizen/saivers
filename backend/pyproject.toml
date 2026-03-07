@@ -1,7 +1,7 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "WattCoach backend — FastAPI + ClickHouse energy analytics API"
+description = "Saivers backend — FastAPI + ClickHouse energy analytics API"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [

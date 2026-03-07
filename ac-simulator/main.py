@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AC Simulator",
-    description="Mock smart AC appliance server — WattCoach hackathon",
+    description="Mock smart AC appliance server — Saivers hackathon",
     version="1.0.0",
     lifespan=lifespan,
 )
