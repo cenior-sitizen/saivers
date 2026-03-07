@@ -55,7 +55,7 @@ def get_anomalies(household_id: int, days: int = 7) -> list[dict]:
             """,
             parameters={"hid": household_id, "days": days},
         )
-        rows = result.named_results()
+        rows = list(result.named_results())
         for r in rows:
             r["household_id"] = household_id
             r["kwh"] = r["excess_kwh"] + r["baseline_kwh"]
@@ -82,7 +82,7 @@ def get_weekly_comparison(household_id: int) -> dict:
             """,
             parameters={"hid": household_id},
         )
-        row = result.named_results()[0]
+        row = list(result.named_results())[0]
         this_w = float(row["this_week_kwh"] or 0)
         last_w = float(row["last_week_kwh"] or 1)
         change_pct = round((this_w - last_w) / last_w * 100, 1) if last_w else 0
@@ -118,7 +118,7 @@ def detect_ac_night_anomaly(household_id: int) -> dict:
             """,
             parameters={"hid": household_id},
         )
-        row = result.named_results()[0]
+        row = list(result.named_results())[0]
         on_count = int(row["on_count"] or 0)
         avg_kwh = float(row["avg_kwh"] or 0)
         # Approximate days from reading count (48 slots/day → slots 0-5 = 6 slots/day)
@@ -152,7 +152,7 @@ def get_ac_pattern(household_id: int) -> dict:
             """,
             parameters={"hid": household_id},
         )
-        row = result.named_results()[0]
+        row = list(result.named_results())[0]
         night = detect_ac_night_anomaly(household_id)
         return {
             "avg_daily_hours_on": round(float(row["avg_daily_hours_on"] or 0), 1),

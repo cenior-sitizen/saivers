@@ -1,7 +1,11 @@
-
 # Python
 backend/__pycache__/
 backend/**/__pycache__/
 backend/.venv/
 backend/.env
 backend/*.pyc
+
+# Agent/IDE skills (local)
+.windsurf/skills/clickhouse-best-practices
+.claude/skills/clickhouse-best-practices
+.agents/skills/clickhouse-best-practices/

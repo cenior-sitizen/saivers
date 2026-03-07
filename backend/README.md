@@ -1571,3 +1571,313 @@ P2 — Nice to have:
 | AC power draw | 0.6–1.2 kWh/slot (NEA estimates) |
 
 ---
+
+## Frontend Integration Guide
+
+> For the frontend team — how to connect to the live backend API.
+
+**Base URL:** `http://localhost:8000`
+**CORS:** Open (`allow_origins=["*"]`) — no auth needed.
+**Swagger docs:** `http://localhost:8000/docs`
+
+---
+
+### Rooms & Appliances Endpoint (NEW)
+
+```
+GET /api/devices/rooms/{household_id}
+```
+
+**Example:** `curl http://localhost:8000/api/devices/rooms/1001`
+
+**Response:** Array of 4 room objects (always 4 rooms, zeros if no data)
+```json
+[
+  {
+    "room_id": "living-room",
+    "room_name": "Living Room",
+    "slug": "living-room",
+    "appliance": "Air Conditioner",
+    "device_id": "ac-living-room",
+    "status": "On",
+    "temp_setting_c": 24,
+    "runtime_today_hours": 6.0,
+    "kwh_today": 4.1,
+    "kwh_this_week": 18.2,
+    "percent_of_total": 42.5,
+    "runtime_week_hours": 12.0,
+    "avg_temp_c": 24.5,
+    "trend_vs_last_week_pct": -5.2
+  },
+  { "room_id": "master-room", "room_name": "Master Room", "..." },
+  { "room_id": "room-1",      "room_name": "Room 1",      "..." },
+  { "room_id": "room-2",      "room_name": "Room 2",      "..." }
+]
+```
+
+**Field mapping for frontend components:**
+
+| Component | Field |
+|---|---|
+| `RoomCard` (home page) | `slug` → href, `room_name` → display name |
+| `RoomUsageCard` | `room_name`, `status`, `kwh_this_week`, `percent_of_total`, `runtime_week_hours`, `avg_temp_c` |
+| Room detail page | `status`, `temp_setting_c`, `runtime_today_hours`, `kwh_today` |
+| Trend indicator | `trend_vs_last_week_pct` (negative = improved) |
+
+**How to replace `homeRooms` in `user/mockData.ts`:**
+```ts
+const res   = await fetch("http://localhost:8000/api/devices/rooms/1001");
+const rooms = await res.json();
+// rooms[].slug       → RoomCard href /user/aircon/{slug}
+// rooms[].room_name  → RoomCard display name
+// rooms[].status     → "On" | "Off"
+// rooms[].percent_of_total always sums to 100 across 4 rooms
+```
+
+**Notes:**
+- Always returns exactly 4 rooms in fixed order: Living Room → Master Room → Room 1 → Room 2
+- `trend_vs_last_week_pct` is negative when this week < last week (good)
+- `percent_of_total` is 0 for all rooms if no usage data exists yet
+
+---
+
+### Weekly Bill Endpoint (NEW)
+
+```
+GET /api/usage/weekly-bill/{household_id}
+```
+
+**Example:** `curl http://localhost:8000/api/usage/weekly-bill/1001`
+
+**Response:**
+```json
+{
+  "summary_metrics": [
+    { "label": "Total Usage This Week",    "value": "235.27 kWh" },
+    { "label": "Estimated Cost This Week", "value": "S$68.49" },
+    { "label": "Saved vs Last Week",       "value": "S$2.95 saved" },
+    { "label": "Projected Monthly Cost",   "value": "S$296.56" }
+  ],
+  "weekly_comparison": {
+    "this_week_kwh":  235.27,
+    "last_week_kwh":  245.06,
+    "percent_change": -4.1,
+    "this_week_cost": "S$68.49",
+    "last_week_cost": "S$71.44"
+  },
+  "chart_data": [
+    { "label": "Sun", "value": 36.22 },
+    { "label": "Mon", "value": 31.14 },
+    { "label": "Tue", "value": 31.81 },
+    { "label": "Wed", "value": 34.41 },
+    { "label": "Thu", "value": 32.90 },
+    { "label": "Fri", "value": 33.20 },
+    { "label": "Sat", "value": 35.59 }
+  ],
+  "daily_breakdown": [
+    { "date": "2026-03-01", "day": "Sun", "kwh": 36.22, "cost_sgd": 10.54 },
+    "... 7 entries total"
+  ]
+}
+```
+
+**How to replace `mockData.ts` in aircon-impact page:**
+
+| Component | Field |
+|---|---|
+| `SummaryCard` ×4 | `summary_metrics[].label` + `.value` |
+| `ComparisonCard` | `weekly_comparison.this_week_kwh/cost`, `last_week_kwh/cost`, `percent_change` |
+| `UsageChart` | `chart_data[]` → `{label: "Mon", value: 31.1}` |
+| Daily detail | `daily_breakdown[]` → `{date, day, kwh, cost_sgd}` |
+
+```ts
+const res  = await fetch("http://localhost:8000/api/usage/weekly-bill/1001");
+const data = await res.json();
+
+// data.summary_metrics    -> SummaryCard props
+// data.weekly_comparison  -> ComparisonCard props
+// data.chart_data         -> UsageChart data prop
+// data.daily_breakdown    -> daily detail list
+```
+
+**Notes:**
+- `chart_data` always has exactly 7 entries (missing days backfilled with 0)
+- `percent_change` is negative when this week < last week (good!)
+- "Saved vs Last Week" shows `"S$X.XX more"` if usage went up
+
+---
+
+### All Available Endpoints
+
+#### Insights
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/insights/{household_id}` | Top AI insights + OpenAI explanation |
+| GET | `/api/insights/anomalies/{household_id}` | Anomaly list with scores |
+| GET | `/api/insights/weekly-comparison/{household_id}` | This week vs last week kWh |
+| GET | `/api/insights/ac-pattern/{household_id}` | AC usage pattern summary |
+| POST | `/api/insights/coach/chat` | `{"household_id": 1001, "message": "..."}` → AI reply |
+
+#### Device Control (Mock AC)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/devices/ac/status/{household_id}` | Current AC state + schedule |
+| POST | `/api/devices/ac/schedule` | `{"household_id":1001,"temp_c":24,"start_time":"22:00","end_time":"06:00"}` |
+| POST | `/api/devices/ac/off/{household_id}` | Turn AC off immediately |
+| POST | `/api/devices/ac/apply-recommendation` | `{"household_id":1001,"insight_type":"ac_night_anomaly"}` |
+
+#### Habits & Rewards
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/habits/{household_id}` | Streaks + week compliance rates |
+| POST | `/api/habits/evaluate/{household_id}` | Evaluate today + award points |
+| GET | `/api/habits/{household_id}/impact` | kWh/S$/CO2 saved + motivational summary |
+| GET | `/api/habits/rewards/{household_id}` | Points balance + vouchers |
+| POST | `/api/habits/rewards/redeem/{household_id}` | Redeem 500pts → S$5 CDC voucher |
+
+#### Admin (Punggol Region)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/admin/households` | All 10 households with today's kWh + anomaly count |
+| GET | `/api/admin/region-summary` | Punggol aggregate kWh, cost, carbon |
+| GET | `/api/admin/peak-heatmap` | Slot-level heatmap for neighbourhood |
+| GET | `/api/admin/grid-contribution` | Per-household peak reduction % vs baseline |
+
+---
+
+### Household IDs
+
+| ID | Name | Type | Notes |
+|---|---|---|---|
+| 1001 | Ahmad | 4-room HDB | **Main demo** — has AC 2am anomaly |
+| 1002 | Priya | 4-room HDB | |
+| 1003 | Wei Ming | 5-room HDB | |
+| 1004 | Siti | 4-room HDB | |
+| 1005 | Rajan | 4-room HDB | |
+| 1006 | Li Ling | 5-room HDB | |
+| 1007 | Muthu | 4-room HDB | |
+| 1008 | Xiao Hua | 5-room HDB | |
+| 1009 | Zainab | 4-room HDB | |
+| 1010 | Chandra | Condo | |
+
+---
+
+### Demo Flow (for judges)
+
+```
+1. GET  /api/insights/1001
+   → "AC ran at 2am — 7 nights", can_automate: true
+
+2. POST /api/devices/ac/apply-recommendation
+   Body: { "household_id": 1001, "insight_type": "ac_night_anomaly" }
+   → Schedule set automatically, projected savings returned
+
+3. GET  /api/devices/ac/status/1001
+   → New schedule is active
+
+4. GET  /api/usage/weekly-bill/1001
+   → Real S$ cost breakdown + 7-day chart
+
+5. POST /api/insights/coach/chat
+   Body: { "household_id": 1001, "message": "How much will I save?" }
+   → OpenAI coach responds with Ahmad's personalised savings estimate
+```
+
+---
+
+## Changelog — What Changed (Backend → Frontend handoff)
+
+### 2026-03-07 — Rooms & Appliances Support
+
+**What we added:**
+
+All 4 AC rooms per household are now tracked in ClickHouse with 90 days of real usage data. Previously only the Living Room was tracked. We added a new endpoint that returns the room list with per-room appliance data.
+
+**New endpoint:**
+
+```
+GET /api/devices/rooms/{household_id}
+```
+
+Example: `http://localhost:8000/api/devices/rooms/1001`
+
+Returns an array of exactly 4 room objects, always in this order:
+1. Living Room (`slug: "living-room"`)
+2. Master Room (`slug: "master-room"`)
+3. Room 1 (`slug: "room-1"`)
+4. Room 2 (`slug: "room-2"`)
+
+**What you need to change in the frontend:**
+
+**1. `app/user/mockData.ts` — replace `homeRooms` static array**
+
+```ts
+const res   = await fetch("http://localhost:8000/api/devices/rooms/1001");
+const rooms = await res.json();
+// Use rooms[].room_name for display
+// Use rooms[].slug for href: /user/aircon/{slug}
+```
+
+**2. `app/user/aircon-impact/mockData.ts` — replace `roomUsageData`**
+
+Use the same `/api/devices/rooms/1001` response. Field mapping:
+
+| Your mockData field | API field | Notes |
+|---|---|---|
+| `name` | `room_name` | e.g. `"Living Room"` |
+| `status` | `status` | `"On"` or `"Off"` — map to `"Running"` / `"Idle"` as your component needs |
+| `usageKwh` | `kwh_this_week` | weekly total kWh for this room |
+| `percentOfTotal` | `percent_of_total` | always sums to 100 across 4 rooms |
+| `runtimeHours` | `runtime_week_hours` | hours the AC ran this week |
+| `avgTempC` | `avg_temp_c` | average set temperature while on |
+| `trendNote` | build from `trend_vs_last_week_pct` | e.g. `"-5.2% vs last week"` — negative means improved |
+
+**3. `app/user/aircon/[room]/mockData.ts` — replace `roomDataMap`**
+
+For the per-room detail page, filter the same array by `slug`:
+
+```ts
+const res   = await fetch("http://localhost:8000/api/devices/rooms/1001");
+const rooms = await res.json();
+const room  = rooms.find(r => r.slug === params.room);
+```
+
+Field mapping for `StatusSummaryCard` and the room header:
+
+| Your mockData field | API field |
+|---|---|
+| `status` | `status` (`"On"` / `"Off"`) |
+| `temperature` | `temp_setting_c` |
+| `runtimeTodayHours` | `runtime_today_hours` |
+| `energyTodayKwh` | `kwh_today` |
+| `trendVsPrevious` | `trend_vs_last_week_pct` |
+
+**Important notes:**
+- All 4 rooms are always returned — no nulls, no missing rooms
+- If a room has no data yet, all numeric fields are `0` (safe to render)
+- `trend_vs_last_week_pct` is **negative** = good (usage went down), **positive** = usage went up
+- `percent_of_total` always sums to 100 across the 4 rooms
+
+---
+
+### 2026-03-07 — Weekly Bill Endpoint
+
+**What we added:**
+
+Real daily electricity cost data from ClickHouse, replacing the static `mockData.ts` on the aircon-impact page.
+
+**New endpoint:**
+
+```
+GET /api/usage/weekly-bill/{household_id}
+```
+
+Example: `http://localhost:8000/api/usage/weekly-bill/1001`
+
+See the **Weekly Bill Endpoint** section above for the full response shape and field mapping.
+
+---
