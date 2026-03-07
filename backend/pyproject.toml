@@ -1,0 +1,14 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "WattCoach backend — FastAPI + ClickHouse energy analytics API"
+requires-python = ">=3.9"
+dependencies = [
+    "clickhouse-connect>=0.13.0",
+    "fastapi>=0.128.8",
+    "httpx>=0.28.1",
+    "openai>=2.26.0",
+    "pydantic>=2",
+    "python-dotenv>=1.2.1",
+    "uvicorn[standard]>=0.39.0",
+]
