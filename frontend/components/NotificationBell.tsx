@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, useCallback } from "react";
 
 interface WeeklyInsight {
@@ -249,7 +250,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
       {/* ── Push notification toast ───────────────────────────────────────── */}
       {toast && !open && (
         <div
-          className="fixed bottom-5 right-4 z-[100] w-[320px] animate-in slide-in-from-bottom-4 fade-in duration-300 sm:w-[360px]"
+          className="fixed bottom-5 left-1/2 z-[100] w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2"
           style={{ animation: "slideUpFade 0.3s ease-out" }}
         >
           <div
@@ -407,11 +408,15 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                         : ""
                     }`}
                   >
-                    {/* Header row */}
+                    {/* Header row — title links to detail page */}
                     <div className="mb-1.5 flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold leading-snug text-zinc-900 dark:text-zinc-50">
+                      <Link
+                        href={`/user/insights/${insight.insight_id}`}
+                        onClick={() => setOpen(false)}
+                        className="flex-1 text-sm font-semibold leading-snug text-zinc-900 hover:text-[#007B8A] dark:text-zinc-50 dark:hover:text-[#86CCD2]"
+                      >
                         {insight.notification_title}
-                      </p>
+                      </Link>
                       <span
                         className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[insight.status]}`}
                       >
@@ -432,9 +437,21 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                     </div>
 
                     {/* Body */}
-                    <p className="mb-3 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    <p className="mb-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                       {insight.notification_body}
                     </p>
+
+                    {/* View details link */}
+                    <Link
+                      href={`/user/insights/${insight.insight_id}`}
+                      onClick={() => setOpen(false)}
+                      className="mb-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#007B8A] hover:underline dark:text-[#86CCD2]"
+                    >
+                      View full details
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
 
                     {/* AI summary — shown for unread/read */}
                     {(insight.status === "unread" || insight.status === "read") && (
