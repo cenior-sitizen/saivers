@@ -172,7 +172,7 @@ _DDLS: list[tuple[str, str]] = [
             interval_date,
             slot_idx,
             sumState(CAST(kwh AS Decimal(12,3)))  AS total_kwh,
-            uniqState(household_id)    AS active_homes
+            uniqState(household_id)               AS active_homes
         FROM sp_energy_intervals
         GROUP BY neighborhood_id, interval_date, slot_idx
         """,

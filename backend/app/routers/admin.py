@@ -193,12 +193,10 @@ def grid_contribution() -> GridContribution:
         for r in result.result_rows
     ]
 
-    if households_data:
-        avg_reduction = round(
-            sum(h.reduction_pct for h in households_data) / len(households_data), 2
-        )
-    else:
-        avg_reduction = 0.0
+    avg_reduction = (
+        round(sum(h.reduction_pct for h in households_data) / len(households_data), 2)
+        if households_data else 0.0
+    )
 
     return GridContribution(
         period="last_7_days_vs_4week_baseline",
@@ -212,7 +210,6 @@ def households_summary() -> list[HouseholdSummary]:
     """
     Today's kWh, baseline, and anomaly count per household.
     Uses ANY INNER JOIN between sp_energy_intervals and energy_features.
-    Filters neighborhood_id (ORDER BY prefix) on the raw table.
     """
     client = get_client()
     result = client.query(

@@ -19,10 +19,14 @@ def _validate_env() -> None:
 @lru_cache(maxsize=1)
 def get_client() -> Client:
     _validate_env()
+    host = os.environ["CLICKHOUSE_HOST"].replace("https://", "").replace("http://", "").rstrip("/")
     return clickhouse_connect.get_client(
-        host=os.environ["CLICKHOUSE_HOST"],
+        host=host,
         port=443,
         user=os.environ["CLICKHOUSE_USER"],
         password=os.environ["CLICKHOUSE_PASSWORD"],
+        database=os.getenv("CLICKHOUSE_DB", "default"),
         secure=True,
+        # Safe small-batch writes — avoids ClickHouse part explosion for real-time inserts
+        settings={"async_insert": 1, "wait_for_async_insert": 1},
     )
