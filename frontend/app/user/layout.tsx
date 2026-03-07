@@ -15,9 +15,10 @@ export default function UserLayout({
 
         {/* Mobile bottom nav bar */}
         <nav
-          className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-[#86CCD2]/30 bg-[#86CCD2] px-4 py-3 safe-area-inset-bottom sm:max-w-md sm:left-1/2 sm:-translate-x-1/2"
+          className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#86CCD2]/30 bg-[#86CCD2] safe-area-inset-bottom"
           aria-label="Main navigation"
         >
+          <div className="mx-auto flex max-w-md items-center justify-around px-4 py-3 sm:px-6">
           <Link
             href="/user"
             className="flex flex-col items-center gap-1 text-white/90 transition-colors hover:text-white"
@@ -75,6 +76,7 @@ export default function UserLayout({
             </svg>
             <span className="text-xs font-medium">Profile</span>
           </Link>
+          </div>
         </nav>
       </div>
     </HouseholdProvider>

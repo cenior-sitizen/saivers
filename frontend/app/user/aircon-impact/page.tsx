@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { SummaryCard } from "@/components/SummaryCard";
 import { ComparisonCard } from "@/components/ComparisonCard";
-import { RoomUsageCard } from "@/components/RoomUsageCard";
-import { UsageChart } from "@/components/UsageChart";
-import { SpikeCard } from "@/components/SpikeCard";
-import { InsightCard } from "@/components/InsightCard";
-import { RecommendationCard } from "@/components/RecommendationCard";
+import { TopRecommendationCard } from "./TopRecommendationCard";
+import { AirconImpactWidgets } from "./AirconImpactWidgets";
 import { fetchImpactData } from "@/lib/aircon-data";
 
 export default async function AirconImpactScreen() {
@@ -55,7 +52,20 @@ export default async function AirconImpactScreen() {
         </p>
       </div>
 
-      {/* Weekly summary cards */}
+      {/* 1. Top recommendation — saves the most */}
+      <section className="mb-6">
+        <TopRecommendationCard
+          recommendation={
+            [...apiData.recommendations].sort(
+              (a, b) =>
+                ((a as { savingsRank?: number }).savingsRank ?? 99) -
+                ((b as { savingsRank?: number }).savingsRank ?? 99)
+            )[0] ?? apiData.recommendations[0]
+          }
+        />
+      </section>
+
+      {/* 2. The 5 cards */}
       <section className="mb-6">
         <div className="grid grid-cols-2 gap-3">
           {summaryMetrics.map((metric) => (
@@ -66,89 +76,23 @@ export default async function AirconImpactScreen() {
             />
           ))}
         </div>
-      </section>
-
-      {/* This Week vs Last Week */}
-      <section className="mb-6">
-        <ComparisonCard
-          thisWeek={apiData.weeklyComparison.thisWeek}
-          lastWeek={apiData.weeklyComparison.lastWeek}
-          percentChange={apiData.weeklyComparison.percentChange}
-          thisWeekCost={apiData.weeklyComparison.thisWeekCost}
-          lastWeekCost={apiData.weeklyComparison.lastWeekCost}
-        />
-      </section>
-
-      {/* Room-by-room breakdown */}
-      <section className="mb-6">
-        <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Room-by-room breakdown
-        </h2>
-        <div className="flex flex-col gap-3">
-          {apiData.roomUsageData.map((room) => (
-            <RoomUsageCard
-              key={room.id}
-              name={room.name}
-              status={room.status}
-              usageKwh={room.usageKwh}
-              percentOfTotal={room.percentOfTotal}
-              runtimeHours={room.runtimeHours}
-              avgTempC={room.avgTempC}
-              trendNote={room.trendNote}
-            />
-          ))}
+        <div className="mt-6">
+          <ComparisonCard
+            thisWeek={apiData.weeklyComparison.thisWeek}
+            lastWeek={apiData.weeklyComparison.lastWeek}
+            percentChange={apiData.weeklyComparison.percentChange}
+            thisWeekCost={apiData.weeklyComparison.thisWeekCost}
+            lastWeekCost={apiData.weeklyComparison.lastWeekCost}
+          />
         </div>
       </section>
 
-      {/* Usage trend chart */}
-      <section className="mb-6">
-        <UsageChart
-          data={apiData.chartData}
-          title="Weekly Usage Trend"
-        />
-      </section>
-
-      {/* Spike highlights */}
-      {apiData.spikeEvents.length > 0 && (
-      <section className="mb-6">
-        <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Spike highlights
-        </h2>
-        <div className="flex flex-col gap-2">
-          {apiData.spikeEvents.map((event) => (
-            <SpikeCard
-              key={event.id}
-              time={event.time}
-              description={event.description}
-            />
-          ))}
-        </div>
-      </section>
-      )}
-
-      {/* Savings insight */}
-      <section className="mb-6">
-        <InsightCard
-          savedThisWeek={apiData.savingsInsight.savedThisWeek}
-          projectedMonthly={apiData.savingsInsight.projectedMonthly}
-        />
-      </section>
-
-      {/* Recommendation cards */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Recommendations
-        </h2>
-        <div className="flex flex-col gap-3">
-          {apiData.recommendations.map((rec) => (
-            <RecommendationCard
-              key={rec.id}
-              title={rec.title}
-              description={rec.description}
-            />
-          ))}
-        </div>
-      </section>
+      {/* Customizable widgets */}
+      <AirconImpactWidgets
+        roomUsageData={apiData.roomUsageData}
+        spikeEvents={apiData.spikeEvents}
+        recommendations={apiData.recommendations}
+      />
     </div>
   );
 }
