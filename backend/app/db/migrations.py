@@ -117,7 +117,7 @@ _DDLS: list[tuple[str, str]] = [
         (
             household_id  UInt32,
             reward_type   LowCardinality(String),
-            points_earned UInt32,
+            points_earned Int32,   -- signed: negative for voucher redemptions
             reason        String,
             voucher_label String   DEFAULT '',
             created_at    DateTime DEFAULT now()

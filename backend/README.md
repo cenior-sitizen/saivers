@@ -1881,3 +1881,311 @@ Example: `http://localhost:8000/api/usage/weekly-bill/1001`
 See the **Weekly Bill Endpoint** section above for the full response shape and field mapping.
 
 ---
+
+---
+
+### 2026-03-07 — Reward System: Points & CDC Vouchers
+
+**What we added / fixed:**
+
+End-to-end reward points and CDC voucher redemption flow — habit evaluation, ledger, and frontend API contract.
+
+---
+
+## Reward System
+
+### How Points Work
+
+Users earn points by achieving energy-saving habits. The backend tracks two habit types:
+
+| Habit | Trigger | Points |
+|---|---|---|
+| `offpeak_ac` | AC usage < 0.3 kWh during 7pm–11pm peak window | 20 pts/day |
+| `weekly_reduction` | This week's total kWh < 95% of last week's | 50 pts/week |
+| Streak milestone (7 days) | 7 consecutive offpeak_ac days | +100 bonus |
+| Streak milestone (14 days) | 14 consecutive offpeak_ac days | +250 bonus |
+| Streak milestone (30 days) | 30 consecutive days | +500 bonus |
+
+**Voucher threshold:** 500 points = S$5 CDC voucher.
+
+Points are stored as an **append-only ledger** in `reward_transactions`. Balance is always computed as `SUM(points_earned)`. Voucher redemptions append a **negative** row (−500 pts) — no rows are ever updated or deleted.
+
+---
+
+## Reward Endpoints (All Verified ✓)
+
+### GET `/api/habits/{household_id}`
+Current habit streaks and this-week rate.
+
+```bash
+curl http://localhost:8000/api/habits/1001
+```
+
+```json
+{
+  "offpeak_ac": {
+    "streak_days": 7,
+    "today_achieved": false,
+    "this_week_rate": 1.0
+  },
+  "weekly_reduction": {
+    "streak_days": 0,
+    "today_achieved": false,
+    "this_week_rate": 0.0
+  }
+}
+```
+
+---
+
+### POST `/api/habits/evaluate/{household_id}`
+Evaluate today's habits against real ClickHouse data and award points.
+
+```bash
+curl -X POST http://localhost:8000/api/habits/evaluate/1001
+```
+
+```json
+{
+  "household_id": 1001,
+  "evaluation": {
+    "offpeak_ac": { "achieved": false, "actual_kwh": 26.809, "threshold_kwh": 0.3 },
+    "weekly_reduction": { "achieved": false, "this_week_kwh": 273.26, "last_week_kwh": 246.27 }
+  },
+  "points_awarded": [],
+  "new_balance": 240,
+  "points_to_voucher": 260
+}
+```
+
+When a habit is achieved, `points_awarded` contains the entries and `new_balance` reflects the updated total.
+
+---
+
+### GET `/api/habits/rewards/{household_id}`
+Full rewards dashboard — balance, voucher status, history, and redeemed vouchers.
+
+```bash
+curl http://localhost:8000/api/habits/rewards/1001
+```
+
+```json
+{
+  "points_balance": 240,
+  "points_to_next_voucher": 260,
+  "vouchers_available": 0,
+  "can_redeem": false,
+  "voucher_value_sgd": 5.0,
+  "voucher_threshold": 500,
+  "redeemed_vouchers": [],
+  "history": [
+    { "date": "2026-03-07", "points": 100, "reason": "Streak milestone: 7 days!" },
+    { "date": "2026-03-07", "points": 20,  "reason": "Off-peak AC — streak day 7" }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `points_balance` | int | Current point total |
+| `points_to_next_voucher` | int | Points needed to reach next voucher |
+| `vouchers_available` | int | How many vouchers can be redeemed now |
+| `can_redeem` | bool | `true` when balance ≥ 500 |
+| `voucher_value_sgd` | float | Always 5.0 (S$5 CDC voucher) |
+| `voucher_threshold` | int | Always 500 |
+| `redeemed_vouchers` | array | All past redemptions (dedicated query, not capped) |
+| `history` | array | Positive-point earn events (last 20) |
+
+---
+
+### POST `/api/habits/rewards/redeem/{household_id}`
+Redeem 500 points for a mock CDC voucher.
+
+```bash
+curl -X POST http://localhost:8000/api/habits/rewards/redeem/1001
+```
+
+**Success (balance ≥ 500):**
+```json
+{
+  "success": true,
+  "voucher_code": "CDC-1001-2026",
+  "message": "S$5 CDC voucher issued: CDC-1001-2026",
+  "points_deducted": 500,
+  "new_balance": 0
+}
+```
+
+**Failure (not enough points):**
+```json
+{
+  "success": false,
+  "message": "Need 500 points, have 240",
+  "balance": 240
+}
+```
+
+---
+
+### GET `/api/habits/{household_id}/impact`
+Weekly energy impact (kWh/SGD/CO2 saved) with AI motivational summary.
+
+```bash
+curl http://localhost:8000/api/habits/1001/impact
+```
+
+```json
+{
+  "kwh_saved": 0.0,
+  "sgd_saved": 0.0,
+  "co2_saved": 0.0,
+  "reduction_pct": 0.0,
+  "ai_summary": "Ahmad, every small step counts..."
+}
+```
+
+---
+
+## Frontend Integration
+
+### Recommended component mapping
+
+```ts
+// 1. Load rewards dashboard
+const res = await fetch("http://localhost:8000/api/habits/rewards/1001");
+const data = await res.json();
+
+// 2. Points progress bar
+const pct = Math.min(100, (data.points_balance / data.voucher_threshold) * 100);
+
+// 3. Redeem button — only show when can_redeem is true
+if (data.can_redeem) {
+  // show "Redeem S$5 CDC Voucher" button
+}
+
+// 4. Redeem action
+const redeem = await fetch("http://localhost:8000/api/habits/rewards/redeem/1001", {
+  method: "POST"
+});
+const result = await redeem.json();
+if (result.success) {
+  alert(`Voucher issued: ${result.voucher_code}`);
+  // refresh rewards data
+}
+
+// 5. Show redeemed vouchers list
+data.redeemed_vouchers.forEach(v => {
+  // v.date, v.voucher_code, v.value_sgd
+});
+```
+
+---
+
+## How Points Update with Real-Time Data Ingestion
+
+When energy data is ingested every 30 minutes (via `scripts/simulate_realtime.py`), the question is: **how do points get awarded without the frontend calling `/evaluate` manually?**
+
+Codex verified three options, ranked by hackathon complexity:
+
+---
+
+### Option 1 — Ingest script calls evaluate (Recommended for hackathon)
+
+**How it works:** After each batch write to ClickHouse, `simulate_realtime.py` calls `evaluate_daily_habits()` internally (or hits `POST /api/habits/evaluate/{household_id}`).
+
+```python
+# In simulate_realtime.py, after inserting each batch:
+import requests
+for hid in HOUSEHOLD_IDS:
+    requests.post(f"http://localhost:8000/api/habits/evaluate/{hid}")
+```
+
+**Frontend impact:** None. Just call `GET /api/habits/rewards/{household_id}` on page load or refresh — points are already materialized.
+
+**Critical requirement:** Add idempotency — before awarding, check if today's habit was already evaluated:
+```python
+# In habit_service.py, before record_habit_event():
+existing = client.query(
+    "SELECT count() FROM habit_events WHERE household_id={hid} AND habit_type={ht} AND event_date=today()",
+    ...
+)
+if list(existing.named_results())[0]["count()"] > 0:
+    continue  # already evaluated today
+```
+
+**Pros:** Simplest, guaranteed fresh on every read.
+**Cons:** Ingest script is coupled to backend URL.
+
+---
+
+### Option 2 — FastAPI background evaluator loop (Most production-like)
+
+**How it works:** Add an asyncio background loop in `main.py` (same pattern as the AC simulator's `tick_loop`). Every few minutes, it evaluates all households and awards points if new data exists.
+
+```python
+# In main.py lifespan:
+async def habit_eval_loop():
+    while True:
+        await asyncio.sleep(300)  # every 5 minutes
+        for hid in HOUSEHOLD_IDS:
+            evaluation = evaluate_daily_habits(hid)
+            # award points with idempotency check
+
+task2 = asyncio.create_task(habit_eval_loop())
+```
+
+**Frontend impact:** None — same `GET /api/habits/rewards/{household_id}`. Points may lag up to 5 minutes after ingest.
+
+**Pros:** No coupling to ingest script, clean separation of concerns, production-like.
+**Cons:** Needs idempotency guard to avoid double-awarding on every loop tick.
+
+---
+
+### Option 3 — Lazy evaluation on GET (Fastest to implement)
+
+**How it works:** The `GET /api/habits/rewards/{household_id}` endpoint automatically calls `evaluate_daily_habits()` before returning if today hasn't been evaluated yet.
+
+**Frontend impact:** None — but first load after midnight may be slightly slower.
+
+**Pros:** Zero extra code, no scheduler.
+**Cons:** Mixes reads and writes, harder to reason about, risk of duplicates without careful guards.
+
+---
+
+### Idempotency Guard (Required for Options 1 & 2)
+
+No matter which option you choose, you **must** prevent double-awarding. The recommended guard pattern:
+
+```python
+# Before awarding: check if already evaluated today
+r = client.query(
+    """
+    SELECT count() AS cnt
+    FROM habit_events
+    WHERE household_id = {hid:UInt32}
+      AND habit_type   = {ht:String}
+      AND event_date   = today()
+    """,
+    parameters={"hid": household_id, "ht": habit_type},
+)
+already_done = int(list(r.named_results())[0]["cnt"]) > 0
+if already_done:
+    continue
+```
+
+For `weekly_reduction`, use `toISOWeek(event_date) = toISOWeek(today())` instead of `event_date = today()`.
+
+---
+
+### Summary for Frontend Team
+
+| Scenario | What frontend does |
+|---|---|
+| Page load | `GET /api/habits/rewards/{household_id}` — always returns current balance |
+| After AC control action | Optionally call `POST /api/habits/evaluate/{household_id}` for immediate feedback |
+| Redeem button | Check `can_redeem: true`, then `POST /api/habits/rewards/redeem/{household_id}` |
+| Show voucher history | `redeemed_vouchers[]` in rewards response — always complete, not paginated |
+| Points progress bar | `points_balance / voucher_threshold * 100` |
+
+**The frontend never needs to understand ingestion timing** — just refresh the rewards endpoint and the balance will reflect the latest state.
+

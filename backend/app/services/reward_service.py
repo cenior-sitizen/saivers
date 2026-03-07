@@ -38,9 +38,38 @@ def get_balance(household_id: int) -> int:
             """,
             parameters={"hid": household_id},
         )
+
         return int(next(iter(r.named_results()))["total"] or 0)
     except Exception:
         return 0
+
+
+def get_redeemed_vouchers(household_id: int) -> list[dict]:
+    """Return all voucher redemptions — dedicated query, not capped by history limit."""
+    client = _get_client()
+    if client is None:
+        return []
+    try:
+        r = client.query(
+            """
+            SELECT
+                toString(toDate(created_at)) AS date,
+                voucher_label,
+                points_earned
+            FROM reward_transactions
+            WHERE household_id = {hid:UInt32}
+              AND reward_type = 'voucher_redeemed'
+              AND points_earned < 0
+            ORDER BY created_at DESC
+            """,
+            parameters={"hid": household_id},
+        )
+        return [
+            {"date": row["date"], "voucher_code": row["voucher_label"], "value_sgd": 5.0}
+            for row in list(r.named_results())
+        ]
+    except Exception:
+        return []
 
 
 def get_history(household_id: int, limit: int = 20) -> list[dict]:
@@ -62,7 +91,7 @@ def get_history(household_id: int, limit: int = 20) -> list[dict]:
             """,
             parameters={"hid": household_id, "lim": limit},
         )
-        return r.named_results()
+        return list(r.named_results())
     except Exception:
         return []
 
@@ -97,16 +126,18 @@ def redeem_voucher(household_id: int) -> dict:
 
     voucher_code = f"CDC-{household_id}-2026"
     client = _get_client()
-    if client:
-        try:
-            client.insert(
-                "reward_transactions",
-                [[household_id, "voucher_redeemed", -VOUCHER_THRESHOLD,
-                  "CDC voucher redeemed", voucher_code]],
-                column_names=["household_id", "reward_type", "points_earned", "reason", "voucher_label"],
-            )
-        except Exception:
-            pass
+    if client is None:
+        return {"success": False, "message": "Database unavailable", "balance": balance}
+
+    try:
+        client.insert(
+            "reward_transactions",
+            [[household_id, "voucher_redeemed", -VOUCHER_THRESHOLD,
+              "CDC voucher redeemed", voucher_code]],
+            column_names=["household_id", "reward_type", "points_earned", "reason", "voucher_label"],
+        )
+    except Exception as e:
+        return {"success": False, "message": f"Redemption failed: {e}", "balance": balance}
 
     return {
         "success": True,

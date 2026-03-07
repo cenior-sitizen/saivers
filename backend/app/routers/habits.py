@@ -17,6 +17,7 @@ from app.services.reward_service import (
     award_points,
     get_balance,
     get_history,
+    get_redeemed_vouchers,
     redeem_voucher,
 )
 from app.services.ai_service import generate_chat_response
@@ -117,17 +118,23 @@ def habit_impact(household_id: int):
 
 @router.get("/rewards/{household_id}")
 def get_rewards(household_id: int):
-    """Return points balance, voucher status, and transaction history."""
+    """Return points balance, voucher status, redeemed vouchers, and transaction history."""
     from app.services.habit_service import VOUCHER_THRESHOLD
     balance = get_balance(household_id)
-    history_raw = get_history(household_id)
+    history_raw = get_history(household_id, limit=20)
+
     return {
         "points_balance": balance,
         "points_to_next_voucher": max(0, VOUCHER_THRESHOLD - balance),
         "vouchers_available": balance // VOUCHER_THRESHOLD,
+        "can_redeem": balance >= VOUCHER_THRESHOLD,
+        "voucher_value_sgd": 5.0,
+        "voucher_threshold": VOUCHER_THRESHOLD,
+        "redeemed_vouchers": get_redeemed_vouchers(household_id),
         "history": [
-            {"date": r["date"], "points": r["points"], "reason": r["reason"]}
+            {"date": r["date"], "points": int(r["points"]), "reason": r["reason"]}
             for r in history_raw
+            if int(r["points"]) > 0
         ],
     }
 
