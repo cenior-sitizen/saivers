@@ -1,11 +1,11 @@
 interface InsightCardProps {
-  savedThisWeek: string;
-  projectedMonthly: string;
+ savedThisWeek: string;
+ projectedMonthly: string;
 }
 
 export function InsightCard({
-  savedThisWeek,
-  projectedMonthly,
+ savedThisWeek,
+ projectedMonthly,
 }: InsightCardProps) {
   return (
     <div className="rounded-2xl border border-[#86CCD2]/30 bg-[#86CCD2]/15 p-5 dark:border-[#86CCD2]/20 dark:bg-[#86CCD2]/10">

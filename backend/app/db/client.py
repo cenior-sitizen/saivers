@@ -25,7 +25,7 @@ def get_client() -> Client:
         port=443,
         user=os.environ["CLICKHOUSE_USER"],
         password=os.environ["CLICKHOUSE_PASSWORD"],
-        database=os.getenv("CLICKHOUSE_DB", "default"),
+        database=os.getenv("CLICKHOUSE_DB", "saivers"),
         secure=True,
         # Safe small-batch writes — avoids ClickHouse part explosion for real-time inserts
         settings={"async_insert": 1, "wait_for_async_insert": 1},

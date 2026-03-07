@@ -1,6 +1,6 @@
 interface ChartDataPoint {
-  label: string;
-  value: number;
+ label: string;
+ value: number;
 }
 
 interface UsageChartProps {

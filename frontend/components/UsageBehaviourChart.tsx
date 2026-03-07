@@ -2,29 +2,29 @@
 
 import type { ReactElement } from "react";
 import {
-  ComposedChart,
-  Area,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
+ ComposedChart,
+ Area,
+ Line,
+ XAxis,
+ YAxis,
+ CartesianGrid,
+ Tooltip,
+ ResponsiveContainer,
+ Legend,
 } from "recharts";
 
 interface UsageDataPoint {
-  time: string;
-  value: number;
-  isOn?: boolean;
-  isSpike?: boolean;
-  districtAvg?: number;
-  singaporeAvg?: number;
+ time: string;
+ value: number;
+ isOn?: boolean;
+ isSpike?: boolean;
+ districtAvg?: number;
+ singaporeAvg?: number;
 }
 
 interface UsageBehaviourChartProps {
-  data: UsageDataPoint[];
-  title?: string;
+ data: UsageDataPoint[];
+ title?: string;
 }
 
 export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): ReactElement {
@@ -75,7 +75,7 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
               formatter={(value, name) => {
                 const labels: Record<string, string> = {
                   value: "You",
-                  districtAvg: "28 districts avg",
+                  districtAvg: "Paya Lebar avg",
                   singaporeAvg: "Singapore avg",
                 };
                 return [`${value ?? 0} kWh`, labels[String(name)] ?? String(name)];
@@ -87,7 +87,7 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
               formatter={(value) => {
                 const labels: Record<string, string> = {
                   value: "You",
-                  districtAvg: "28 districts avg",
+                  districtAvg: "Paya Lebar avg",
                   singaporeAvg: "Singapore avg",
                 };
                 return labels[value] ?? value;

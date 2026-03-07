@@ -5,8 +5,9 @@ import Image from "next/image";
 import { useState } from "react";
 
 interface CollapsibleApplianceProps {
-  id: string;
+  id?: string;
   name: string;
+  modelNumber?: string;
   image: string;
   status: "On" | "Off";
   defaultOpen?: boolean;
@@ -14,14 +15,14 @@ interface CollapsibleApplianceProps {
 }
 
 export function CollapsibleAppliance({
-  id,
   name,
+  modelNumber,
   image,
   status,
   defaultOpen = false,
   children,
 }: CollapsibleApplianceProps): ReactElement {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+ const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#86CCD2]/30 bg-white dark:border-[#86CCD2]/20 dark:bg-zinc-900">
@@ -36,6 +37,9 @@ export function CollapsibleAppliance({
           </div>
           <div>
             <p className="font-semibold text-zinc-900 dark:text-zinc-50">{name}</p>
+            {modelNumber && (
+              <p className="text-xs text-[#666666] dark:text-zinc-400">Model {modelNumber}</p>
+            )}
             <span
               className={`inline-flex items-center gap-1.5 text-xs ${
                 status === "On"
@@ -63,9 +67,11 @@ export function CollapsibleAppliance({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {isOpen && <div className="border-t border-[#86CCD2]/20 px-4 py-4 dark:border-[#86CCD2]/10">
-        {children}
-      </div>}
+      {isOpen && (
+        <div className="border-t border-[#86CCD2]/20 px-4 py-4 dark:border-[#86CCD2]/10">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
