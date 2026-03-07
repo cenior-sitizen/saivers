@@ -35,8 +35,8 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
           {title}
         </h3>
       )}
-      <div className="h-[240px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full">
+        <ResponsiveContainer width="100%" height={240}>
           <ComposedChart
             data={data}
             margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
