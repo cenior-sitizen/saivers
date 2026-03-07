@@ -9,3 +9,6 @@ backend/*.pyc
 .windsurf/skills/clickhouse-best-practices
 .claude/skills/clickhouse-best-practices
 .agents/skills/clickhouse-best-practices/
+
+# LibreChat (third-party, clone separately - use librechat-config/ for setup)
+LibreChat/

@@ -1,0 +1,19 @@
+services:
+  api:
+    volumes:
+      - ./librechat.yaml:/app/librechat.yaml
+    depends_on:
+      - mcp-clickhouse
+  mcp-clickhouse:
+    image: mcp/clickhouse
+    container_name: mcp-clickhouse
+    ports:
+      - 8001:8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - ../frontend/.env
+    environment:
+      - CLICKHOUSE_PORT=443
+      - CLICKHOUSE_MCP_SERVER_TRANSPORT=sse
+      - CLICKHOUSE_MCP_BIND_HOST=0.0.0.0
