@@ -15,8 +15,10 @@ import {
   savingsInsight,
   recommendations,
 } from "./mockData";
+import { fetchImpactData } from "@/lib/aircon-data";
 
-export default function AirconImpactScreen() {
+export default async function AirconImpactScreen() {
+  const apiData = await fetchImpactData();
   return (
     <div className="px-4 py-6 sm:mx-auto sm:max-w-md sm:px-0">
       {/* Header */}
@@ -38,7 +40,20 @@ export default function AirconImpactScreen() {
       {/* Weekly summary cards */}
       <section className="mb-6">
         <div className="grid grid-cols-2 gap-3">
-          {summaryMetrics.map((metric) => (
+          {(apiData?.summary
+            ? [
+                {
+                  label: "Total Aircon Usage This Week",
+                  value: `${apiData.summary.totalKwhThisWeek} kWh`,
+                },
+                {
+                  label: "Estimated Cost This Week",
+                  value: apiData.summary.costThisWeek,
+                },
+                ...summaryMetrics.slice(2),
+              ]
+            : summaryMetrics
+          ).map((metric) => (
             <SummaryCard
               key={metric.label}
               label={metric.label}
@@ -51,11 +66,11 @@ export default function AirconImpactScreen() {
       {/* This Week vs Last Week */}
       <section className="mb-6">
         <ComparisonCard
-          thisWeek={weeklyComparison.thisWeek}
-          lastWeek={weeklyComparison.lastWeek}
-          percentChange={weeklyComparison.percentChange}
-          thisWeekCost={weeklyComparison.thisWeekCost}
-          lastWeekCost={weeklyComparison.lastWeekCost}
+          thisWeek={apiData?.weeklyComparison?.thisWeek ?? weeklyComparison.thisWeek}
+          lastWeek={apiData?.weeklyComparison?.lastWeek ?? weeklyComparison.lastWeek}
+          percentChange={apiData?.weeklyComparison?.percentChange ?? weeklyComparison.percentChange}
+          thisWeekCost={apiData?.weeklyComparison?.thisWeekCost ?? weeklyComparison.thisWeekCost}
+          lastWeekCost={apiData?.weeklyComparison?.lastWeekCost ?? weeklyComparison.lastWeekCost}
         />
       </section>
 
@@ -65,7 +80,7 @@ export default function AirconImpactScreen() {
           Room-by-room breakdown
         </h2>
         <div className="flex flex-col gap-3">
-          {roomUsageData.map((room) => (
+          {(apiData?.roomUsageData?.length ? apiData.roomUsageData : roomUsageData).map((room) => (
             <RoomUsageCard
               key={room.id}
               name={room.name}
@@ -82,7 +97,14 @@ export default function AirconImpactScreen() {
 
       {/* Usage trend chart */}
       <section className="mb-6">
-        <UsageChart data={chartData} title="Weekly Usage Trend" />
+        <UsageChart
+          data={
+            apiData?.chartData?.length
+              ? apiData.chartData
+              : chartData
+          }
+          title="Weekly Usage Trend"
+        />
       </section>
 
       {/* Spike highlights */}

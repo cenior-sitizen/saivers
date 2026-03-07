@@ -2,20 +2,24 @@
 
 import type { ReactElement } from "react";
 import {
-  AreaChart,
+  ComposedChart,
   Area,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 
 interface UsageDataPoint {
   time: string;
   value: number;
-  isOn: boolean;
+  isOn?: boolean;
   isSpike?: boolean;
+  districtAvg?: number;
+  singaporeAvg?: number;
 }
 
 interface UsageBehaviourChartProps {
@@ -31,9 +35,9 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
           {title}
         </h3>
       )}
-      <div className="h-[220px] w-full">
+      <div className="h-[240px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
+          <ComposedChart
             data={data}
             margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
@@ -51,12 +55,12 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
             />
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 11, fill: "#666666" }}
+              tick={{ fontSize: 12, fill: "#0f172a", fontWeight: 600 }}
               axisLine={{ stroke: "#86CCD2", strokeOpacity: 0.3 }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: "#666666" }}
+              tick={{ fontSize: 12, fill: "#0f172a", fontWeight: 600 }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => `${v}`}
@@ -68,24 +72,59 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
                 borderRadius: "12px",
                 fontSize: "12px",
               }}
-              formatter={(value) => [`${value ?? 0} kWh`, "Usage"]}
+              formatter={(value, name) => {
+                const labels: Record<string, string> = {
+                  value: "You",
+                  districtAvg: "28 districts avg",
+                  singaporeAvg: "Singapore avg",
+                };
+                return [`${value ?? 0} kWh`, labels[String(name)] ?? String(name)];
+              }}
               labelFormatter={(label) => `Time: ${label}`}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: 11 }}
+              formatter={(value) => {
+                const labels: Record<string, string> = {
+                  value: "You",
+                  districtAvg: "28 districts avg",
+                  singaporeAvg: "Singapore avg",
+                };
+                return labels[value] ?? value;
+              }}
             />
             <Area
               type="monotone"
               dataKey="value"
+              name="value"
               stroke="#86CCD2"
               strokeWidth={2}
               fill="url(#usageGradient)"
             />
-          </AreaChart>
+            {data.some((d) => d.districtAvg != null) && (
+              <Line
+                type="monotone"
+                dataKey="districtAvg"
+                name="districtAvg"
+                stroke="#64748b"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={false}
+              />
+            )}
+            {data.some((d) => d.singaporeAvg != null) && (
+              <Line
+                type="monotone"
+                dataKey="singaporeAvg"
+                name="singaporeAvg"
+                stroke="#94a3b8"
+                strokeWidth={2}
+                strokeDasharray="2 2"
+                dot={false}
+              />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
-      </div>
-      <div className="mt-3 flex items-center gap-4 text-xs text-[#666666] dark:text-zinc-400">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-[#86CCD2]" />
-          Energy usage over time
-        </span>
       </div>
     </div>
   );

@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { CollapsibleAppliance } from "@/components/CollapsibleAppliance";
 import { StatusSummaryCard } from "@/components/StatusSummaryCard";
 import { TimeRangeToggle, type TimeRangeOption } from "@/components/TimeRangeToggle";
 import { UsageBehaviourChart } from "@/components/UsageBehaviourChart";
@@ -16,8 +17,8 @@ import {
   usageTimeSeriesDay,
   usageTimeSeriesWeek,
   usageTimeSeriesMonth,
-  behaviourSummaries,
-  spikeEventsMap,
+  behaviourSummariesByAppliance,
+  spikeEventsByAppliance,
   comparisonDataMap,
   behaviourInsightsMap,
 } from "./mockData";
@@ -29,6 +30,20 @@ export default function RoomAirconPage() {
   const roomSlug = params.room as string;
 
   const [timeRange, setTimeRange] = useState<TimeRangeOption>("week");
+  const [apiData, setApiData] = useState<{
+    today?: { energyKwh: number; runtimeHours: number; status: string; temperature: number };
+    usageDay?: { time: string; value: number; isOn: boolean }[];
+    usageWeek?: { time: string; value: number; isOn: boolean }[];
+    vsLastWeek?: { thisWeekKwh: number; lastWeekKwh: number; percentChange: number };
+  } | null>(null);
+
+  useEffect(() => {
+    if (!roomSlug || !VALID_ROOMS.includes(roomSlug)) return;
+    fetch(`/api/aircon/room/${roomSlug}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data && setApiData(data))
+      .catch(() => {});
+  }, [roomSlug]);
 
   if (!roomSlug || !VALID_ROOMS.includes(roomSlug)) {
     return (
@@ -42,16 +57,24 @@ export default function RoomAirconPage() {
   }
 
   const room = roomDataMap[roomSlug];
-  const behaviourSummary = behaviourSummaries[roomSlug];
-  const spikeEvents = spikeEventsMap[roomSlug] ?? [];
-  const comparisonData = comparisonDataMap[roomSlug];
+  const baseComparison = comparisonDataMap[roomSlug];
+  const comparisonData = apiData?.vsLastWeek
+    ? {
+        ...baseComparison,
+        vsLastWeek: {
+          label: `Your usage is ${apiData.vsLastWeek.percentChange >= 0 ? "" : ""}${apiData.vsLastWeek.percentChange}% ${apiData.vsLastWeek.percentChange >= 0 ? "higher" : "lower"} than last week`,
+          value: `${apiData.vsLastWeek.percentChange >= 0 ? "+" : ""}${apiData.vsLastWeek.percentChange}%`,
+          isPositive: apiData.vsLastWeek.percentChange <= 0,
+        },
+      }
+    : baseComparison;
   const behaviourInsights = behaviourInsightsMap[roomSlug] ?? [];
 
   const chartData =
     timeRange === "day"
-      ? usageTimeSeriesDay
+      ? (apiData?.usageDay?.length ? apiData.usageDay : usageTimeSeriesDay)
       : timeRange === "week"
-        ? usageTimeSeriesWeek
+        ? (apiData?.usageWeek?.length ? apiData.usageWeek : usageTimeSeriesWeek)
         : usageTimeSeriesMonth;
 
   return (
@@ -70,7 +93,7 @@ export default function RoomAirconPage() {
               {room.name}
             </h1>
             <p className="mt-1 text-sm text-[#666666] dark:text-zinc-400">
-              Air conditioner usage insights
+              {room.appliances.length} smart appliance{room.appliances.length > 1 ? "s" : ""}
             </p>
           </div>
           <Image
@@ -83,127 +106,139 @@ export default function RoomAirconPage() {
         </div>
       </div>
 
-      {/* Appliance status card */}
-      <section className="mb-6">
-        <StatusSummaryCard
-          status={room.status}
-          temperature={room.temperature}
-          runtimeTodayHours={room.runtimeTodayHours}
-          energyTodayKwh={room.energyTodayKwh}
-        />
-      </section>
+      {/* Expandable appliance sections */}
+      <div className="space-y-3">
+        {room.appliances.map((appliance) => {
+          const behaviourSummary =
+            behaviourSummariesByAppliance[roomSlug]?.[appliance.id];
+          const spikeEvents =
+            spikeEventsByAppliance[roomSlug]?.[appliance.id] ?? [];
+          const applianceData =
+            apiData?.today && appliance.id === "ac"
+              ? {
+                  ...appliance,
+                  status: apiData.today.status as "On" | "Off",
+                  temperature: apiData.today.temperature,
+                  runtimeTodayHours: apiData.today.runtimeHours,
+                  energyTodayKwh: apiData.today.energyKwh,
+                }
+              : appliance;
 
-      {/* Time range toggle */}
-      <section className="mb-6">
-        <p className="mb-2 text-sm font-medium text-zinc-900 dark:text-zinc-50">
-          View by
-        </p>
-        <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
-      </section>
+          return (
+            <CollapsibleAppliance
+              key={appliance.id}
+              id={appliance.id}
+              name={appliance.name}
+              image={appliance.image}
+              status={applianceData.status}
+              defaultOpen={appliance.id === "ac"}
+            >
+              {/* Unified card: chart + insights together */}
+              <div className="space-y-4">
+                <StatusSummaryCard
+                  status={applianceData.status}
+                  temperature={applianceData.temperature}
+                  runtimeTodayHours={applianceData.runtimeTodayHours}
+                  energyTodayKwh={applianceData.energyTodayKwh}
+                />
 
-      {/* Usage Behaviour Dashboard */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-          Usage Behaviour
-        </h2>
-        <UsageBehaviourChart
-          data={chartData}
-          title="Energy usage over time"
-        />
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <BehaviourSummaryCard
-            label="Most common usage time"
-            value={behaviourSummary.mostCommonUsageTime}
-          />
-          <BehaviourSummaryCard
-            label="Longest runtime period"
-            value={behaviourSummary.longestRuntimePeriod}
-          />
-          <BehaviourSummaryCard
-            label="Highest usage day"
-            value={behaviourSummary.highestUsageDay}
-          />
-          <BehaviourSummaryCard
-            label="Average daily runtime"
-            value={behaviourSummary.avgDailyRuntime}
-          />
-        </div>
-      </section>
+                {/* View by - inside each appliance */}
+                <div>
+                  <p className="mb-2 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                    View by
+                  </p>
+                  <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
+                </div>
 
-      {/* Spike Explanation */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-          Spike Explanation
-        </h2>
-        <p className="mb-3 text-sm text-[#666666] dark:text-zinc-400">
-          When usage spiked and what caused it
-        </p>
-        <div className="flex flex-col gap-3">
-          {spikeEvents.length > 0 ? (
-            spikeEvents.map((spike) => (
-              <SpikeDetailCard
-                key={spike.id}
-                dateTime={spike.dateTime}
-                room={spike.room}
-                appliance={spike.appliance}
-                magnitude={spike.magnitude}
-                cause={spike.cause}
-              />
-            ))
-          ) : (
-            <p className="rounded-xl border border-[#86CCD2]/30 bg-white px-4 py-6 text-center text-sm text-[#666666] dark:border-[#86CCD2]/20 dark:bg-zinc-900 dark:text-zinc-400">
-              No spikes recorded in this period
-            </p>
-          )}
-        </div>
-      </section>
+                {/* Chart with Your vs 28 districts vs Singapore lines */}
+                <UsageBehaviourChart
+                  data={chartData}
+                  title="Energy usage: You vs 28 districts vs Singapore"
+                />
 
-      {/* Comparison section */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-          Comparison
-        </h2>
-        <p className="mb-3 text-sm text-[#666666] dark:text-zinc-400">
-          Your usage vs benchmarks
-        </p>
-        <div className="flex flex-col gap-3">
-          <ComparisonInsightCard
-            label={comparisonData.vsLastWeek.label}
-            value={comparisonData.vsLastWeek.value}
-            isPositive={comparisonData.vsLastWeek.isPositive}
-          />
-          <ComparisonInsightCard
-            label={comparisonData.vsLastMonth.label}
-            value={comparisonData.vsLastMonth.value}
-            isPositive={comparisonData.vsLastMonth.isPositive}
-          />
-          <ComparisonInsightCard
-            label={comparisonData.vsDistrictAvg.label}
-            value={comparisonData.vsDistrictAvg.value}
-            isPositive={comparisonData.vsDistrictAvg.isPositive}
-          />
-          <ComparisonInsightCard
-            label={comparisonData.vsSingaporeAvg.label}
-            value={comparisonData.vsSingaporeAvg.value}
-            isPositive={comparisonData.vsSingaporeAvg.isPositive}
-          />
-        </div>
-      </section>
+                {/* Behaviour summary - right below chart */}
+                {behaviourSummary && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <BehaviourSummaryCard
+                      label="Most common usage"
+                      value={behaviourSummary.mostCommonUsageTime}
+                    />
+                    <BehaviourSummaryCard
+                      label="Longest runtime"
+                      value={behaviourSummary.longestRuntimePeriod}
+                    />
+                    <BehaviourSummaryCard
+                      label="Highest day"
+                      value={behaviourSummary.highestUsageDay}
+                    />
+                    <BehaviourSummaryCard
+                      label="Avg daily runtime"
+                      value={behaviourSummary.avgDailyRuntime}
+                    />
+                  </div>
+                )}
 
-      {/* Habits and Behaviour Insights */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-          Habits & Behaviour Insights
-        </h2>
-        <p className="mb-3 text-sm text-[#666666] dark:text-zinc-400">
-          Patterns from your usage
-        </p>
-        <div className="flex flex-col gap-3">
-          {behaviourInsights.map((insight) => (
-            <BehaviourInsightCard key={insight.id} text={insight.text} />
-          ))}
-        </div>
-      </section>
+                {/* Spike + Comparison + Insights - grouped together */}
+                <div className="space-y-3 rounded-xl border border-[#86CCD2]/20 bg-[#F3F9F9]/50 p-3 dark:border-[#86CCD2]/10 dark:bg-[#86CCD2]/5">
+                  {spikeEvents.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                        Spike explanation
+                      </p>
+                      <div className="space-y-2">
+                        {spikeEvents.map((spike) => (
+                          <SpikeDetailCard
+                            key={spike.id}
+                            dateTime={spike.dateTime}
+                            room={spike.room}
+                            appliance={spike.appliance}
+                            magnitude={spike.magnitude}
+                            cause={spike.cause}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="mb-2 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                      vs last week / month
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <ComparisonInsightCard
+                        label={comparisonData.vsLastWeek.label}
+                        value={comparisonData.vsLastWeek.value}
+                        isPositive={comparisonData.vsLastWeek.isPositive}
+                      />
+                      <ComparisonInsightCard
+                        label={comparisonData.vsLastMonth.label}
+                        value={comparisonData.vsLastMonth.value}
+                        isPositive={comparisonData.vsLastMonth.isPositive}
+                      />
+                    </div>
+                  </div>
+
+                  {behaviourInsights.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                        Habits & insights
+                      </p>
+                      <div className="space-y-2">
+                        {behaviourInsights.map((insight) => (
+                          <BehaviourInsightCard
+                            key={insight.id}
+                            text={insight.text}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CollapsibleAppliance>
+          );
+        })}
+      </div>
     </div>
   );
 }

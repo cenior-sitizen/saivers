@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 interface StatusSummaryCardProps {
   status: "On" | "Off";
-  temperature: number;
+  temperature?: number;
   runtimeTodayHours: number;
   energyTodayKwh: number;
 }
@@ -35,14 +35,16 @@ export function StatusSummaryCard({
         </span>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-xs text-[#666666] dark:text-zinc-400">
-            Temperature
-          </p>
-          <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            {temperature}°C
-          </p>
-        </div>
+        {temperature != null && (
+          <div>
+            <p className="text-xs text-[#666666] dark:text-zinc-400">
+              Temperature
+            </p>
+            <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              {temperature}°C
+            </p>
+          </div>
+        )}
         <div>
           <p className="text-xs text-[#666666] dark:text-zinc-400">
             Runtime today
