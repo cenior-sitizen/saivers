@@ -2549,3 +2549,108 @@ uv run python -m app.db.migrations
 | `MCP_MODE` | `mock` | `mock` = ac-simulator REST, `miot` = Xiaomi MIoT stub |
 | `AC_SIMULATOR_URL` | `http://localhost:8002` | ac-simulator base URL |
 
+
+---
+
+## Monthly Performance Report (2026-03-08)
+
+### New Endpoint
+
+```
+GET /api/reports/monthly/{household_id}?year=2026&month=3
+```
+
+Returns a comprehensive monthly energy performance report. Both `year` and `month` default to the current SGT month if omitted.
+
+### Response Shape
+
+```json
+{
+  "household_id": 1001,
+  "year": 2026,
+  "month": 3,
+  "energy": {
+    "kwh_this_month": 235.27,
+    "kwh_prev_month": 930.89,
+    "cost_sgd_this_month": 68.49,
+    "cost_sgd_prev_month": 270.98,
+    "carbon_kg_this_month": 94.58,
+    "carbon_kg_prev_month": 374.22,
+    "change_pct": -74.7
+  },
+  "habits": {
+    "achieved_count": 14,
+    "total_days_in_month": 31,
+    "achievement_rate_pct": 45.2
+  },
+  "recommendations": {
+    "applied_count": 3,
+    "total_generated": 4
+  },
+  "neighbourhood": {
+    "avg_kwh_this_month": 217.71,
+    "your_kwh_this_month": 235.27,
+    "percentile": 100,
+    "green_grid_co2_kg": 0.0
+  },
+  "ai_narrative": "Fantastic job this month! You've reduced your energy usage by a remarkable 74.7%..."
+}
+```
+
+### Data Sources
+
+| Field | Source Table |
+|---|---|
+| `energy` | `sp_energy_intervals` (this + prev month) |
+| `habits.achieved_count` | `habit_events` |
+| `recommendations.applied_count` | `applied_recommendations` (`countDistinct(rec_id)`) |
+| `recommendations.total_generated` | `weekly_recommendations` |
+| `neighbourhood.avg_kwh_this_month` | `neighborhood_rollup` MV (`sumMerge` / `uniqMerge`) |
+| `neighbourhood.percentile` | `sp_energy_intervals` grouped by household |
+| `neighbourhood.green_grid_co2_kg` | `max(0, (avg_kwh - your_kwh) × 0.402)` |
+| `ai_narrative` | OpenAI GPT-4o (fallback: template string) |
+
+### ClickHouse Query Design
+
+- **`neighborhood_rollup`** is an `AggregatingMergeTree` — queried with `sumMerge(total_kwh)` and `uniqMerge(active_homes)`, not plain `SUM()`
+- **`sp_energy_intervals`** ORDER BY is `(neighborhood_id, household_id, interval_date, ts)` — all queries include `neighborhood_id` as the leading filter for primary-key index alignment
+- `countDistinct(rec_id)` used for applied recommendations to avoid inflation from duplicate apply events
+- `neighborhood_id` resolved once per request and reused across all sub-queries
+
+### New Files
+
+| File | Purpose |
+|---|---|
+| `app/services/monthly_report_service.py` | Report data aggregation + OpenAI narrative |
+| `app/routers/reports.py` | FastAPI router, query param validation |
+
+`app/main.py` updated to mount `reports.router` at `/api/reports`.
+
+### Frontend Integration
+
+```ts
+// Load monthly report (defaults to current month)
+const report = await fetch("http://localhost:8000/api/reports/monthly/1001")
+  .then(r => r.json());
+
+// Or specify a past month
+const feb = await fetch("http://localhost:8000/api/reports/monthly/1001?year=2026&month=2")
+  .then(r => r.json());
+
+// Key fields for display
+report.energy.change_pct          // % vs last month (negative = improved)
+report.energy.cost_sgd_this_month // S$ spent this month
+report.habits.achievement_rate_pct// % of days with achieved habits
+report.neighbourhood.percentile   // 0=best, 100=worst among neighbours
+report.neighbourhood.green_grid_co2_kg // CO2 offset vs neighbourhood avg
+report.ai_narrative               // GPT-4o 2-3 sentence summary
+```
+
+### Error Behaviour
+
+| Scenario | Behaviour |
+|---|---|
+| Household not found | 404 with detail message |
+| No data for requested month | All metrics return 0, narrative uses template |
+| OpenAI unavailable | Falls back to deterministic template narrative |
+| ClickHouse unavailable | All metrics return 0 defaults |
