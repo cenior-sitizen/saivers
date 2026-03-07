@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 interface CollapsibleApplianceProps {
-  id: string;
+  id?: string;
   name: string;
   image: string;
   status: "On" | "Off";
@@ -14,7 +14,6 @@ interface CollapsibleApplianceProps {
 }
 
 export function CollapsibleAppliance({
-  id,
   name,
   image,
   status,

@@ -42,7 +42,7 @@ function RadialProgress({ value, max }: { value: number; max: number }) {
       <path
         d={describeArc(startAngle, trackEnd)}
         fill="none"
-        stroke="#E0F4F5"
+        stroke="#E8F6F7"
         strokeWidth="12"
         strokeLinecap="round"
       />
@@ -59,8 +59,8 @@ function RadialProgress({ value, max }: { value: number; max: number }) {
       )}
       <defs>
         <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#00A3AD" />
-          <stop offset="100%" stopColor="#007B8A" />
+          <stop offset="0%" stopColor="#86CCD2" />
+          <stop offset="100%" stopColor="#6BB5BC" />
         </linearGradient>
       </defs>
       {/* Dot at end of fill */}
@@ -69,7 +69,7 @@ function RadialProgress({ value, max }: { value: number; max: number }) {
           cx={arcX(fillEnd)}
           cy={arcY(fillEnd)}
           r="7"
-          fill="#007B8A"
+          fill="#86CCD2"
           className="transition-all duration-1000 ease-out"
         />
       )}
@@ -136,51 +136,30 @@ export default function RewardsPage() {
   const balance = data?.points_balance ?? 0;
 
   return (
-    <>
-      {/* Google Fonts */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
-
-        .rewards-root {
-          font-family: 'DM Sans', system-ui, sans-serif;
-        }
-        .rewards-display {
-          font-family: 'DM Serif Display', Georgia, serif;
-        }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .anim-1 { animation: fadeUp 0.5s ease both 0.05s; }
-        .anim-2 { animation: fadeUp 0.5s ease both 0.15s; }
-        .anim-3 { animation: fadeUp 0.5s ease both 0.25s; }
-        .anim-4 { animation: fadeUp 0.5s ease both 0.35s; }
-        .anim-5 { animation: fadeUp 0.5s ease both 0.45s; }
-      `}</style>
-
-      <div className="rewards-root min-h-screen bg-[#F3F9F9] px-4 pb-28 pt-4 dark:bg-zinc-950 sm:mx-auto sm:max-w-md sm:px-0">
-
-        {/* Page title */}
-        <div className="anim-1 mb-5 flex items-end justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#007B8A]">
-              Energy Rewards
-            </p>
-            <h1 className="rewards-display text-2xl text-zinc-900 dark:text-zinc-50">
-              {persona.name}&apos;s Points
-            </h1>
-          </div>
-          {/* Streak badge */}
-          <div className="flex flex-col items-center rounded-2xl border border-[#86CCD2]/40 bg-white px-4 py-2 shadow-sm dark:bg-zinc-900">
-            <span className="rewards-display text-2xl leading-none text-[#007B8A]">
-              {loading ? "—" : (streak ?? 0)}
-            </span>
-            <span className="mt-0.5 text-[10px] font-medium text-zinc-400">day streak</span>
-          </div>
+    <div className="min-h-screen bg-[#F3F9F9] px-4 pb-24 pt-6 dark:bg-zinc-950 sm:mx-auto sm:max-w-md sm:px-0">
+      {/* Page title - matches My Home / Aircon Impact */}
+      <div className="mb-6 flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+            Rewards
+          </h1>
+          <p className="mt-1 text-sm text-[#666666] dark:text-zinc-400">
+            {persona.name}&apos;s points & vouchers
+          </p>
         </div>
+        {/* Streak badge */}
+        <div className="flex flex-col items-center rounded-2xl border border-[#86CCD2]/30 bg-white px-4 py-2 shadow-sm dark:border-[#86CCD2]/20 dark:bg-zinc-900">
+          <span className="text-2xl font-bold leading-none text-[#86CCD2]">
+            {loading ? "—" : (streak ?? 0)}
+          </span>
+          <span className="mt-0.5 text-[10px] font-medium text-[#666666] dark:text-zinc-400">
+            day streak
+          </span>
+        </div>
+      </div>
 
-        {/* Hero balance card */}
-        <div className="anim-2 relative mb-4 overflow-hidden rounded-3xl bg-gradient-to-br from-[#007B8A] to-[#00A3AD] p-5 shadow-lg shadow-[#007B8A]/20">
+      {/* Hero balance card - Monte Carlo gradient */}
+      <div className="relative mb-6 overflow-hidden rounded-2xl border border-[#86CCD2]/30 bg-gradient-to-br from-[#86CCD2] to-[#6BB5BC] p-5 shadow-sm dark:border-[#86CCD2]/20">
           {/* Background grid texture */}
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -198,7 +177,7 @@ export default function RewardsPage() {
               )}
               {/* Balance in centre */}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="rewards-display text-3xl leading-none text-white">
+                <span className="text-3xl font-bold leading-none text-white">
                   {loading ? "…" : balance}
                 </span>
                 <span className="text-[10px] font-medium text-white/60">pts</span>
@@ -207,8 +186,8 @@ export default function RewardsPage() {
 
             {/* Right side */}
             <div className="flex-1">
-              <p className="text-xs font-medium text-white/70">CDC Voucher</p>
-              <p className="rewards-display text-4xl leading-none text-white">
+              <p className="text-xs font-medium text-white/80">CDC Voucher</p>
+              <p className="text-3xl font-bold leading-none text-white">
                 S${data?.voucher_value_sgd ?? 5}
               </p>
               <div className="mt-3">
@@ -240,30 +219,31 @@ export default function RewardsPage() {
           )}
         </div>
 
-        {/* Redeem button */}
-        {!loading && data?.can_redeem && (
-          <div className="anim-3 mb-4">
-            {redeemMsg ? (
-              <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-                ✓ {redeemMsg}
-              </div>
-            ) : (
-              <button
-                onClick={handleRedeem}
-                disabled={redeeming}
-                className="w-full rounded-2xl bg-[#007B8A] py-3.5 text-sm font-semibold text-white shadow-md shadow-[#007B8A]/30 transition-all hover:bg-[#006570] active:scale-[0.98] disabled:opacity-60"
-              >
-                {redeeming ? "Processing…" : "Redeem S$5 CDC Voucher"}
-              </button>
-            )}
-          </div>
-        )}
+      {/* Redeem button */}
+      {!loading && data?.can_redeem && (
+        <div className="mb-6">
+          {redeemMsg ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-400">
+              ✓ {redeemMsg}
+            </div>
+          ) : (
+            <button
+              onClick={handleRedeem}
+              disabled={redeeming}
+              className="w-full rounded-2xl border border-[#86CCD2]/40 bg-[#86CCD2] py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#86CCD2]/90 active:scale-[0.98] disabled:opacity-60 dark:border-[#86CCD2]/50"
+            >
+              {redeeming ? "Processing…" : "Redeem S$5 CDC Voucher"}
+            </button>
+          )}
+        </div>
+      )}
 
-        {/* How to earn */}
-        <div className="anim-3 mb-4 rounded-2xl border border-[#86CCD2]/30 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            How to earn
-          </p>
+      {/* How to earn - matches SummaryCard styling */}
+      <section className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          How to earn
+        </h2>
+        <div className="rounded-2xl border border-[#86CCD2]/30 bg-white px-4 py-4 shadow-sm dark:border-[#86CCD2]/20 dark:bg-zinc-900">
           <div className="space-y-2.5">
             {[
               { label: "Off-peak AC daily", pts: "+20 pts", sub: "AC below 0.3 kWh during 7–11pm" },
@@ -276,19 +256,24 @@ export default function RewardsPage() {
                   <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{item.label}</p>
                   <p className="text-[11px] text-zinc-400">{item.sub}</p>
                 </div>
-                <span className="shrink-0 rounded-lg bg-[#E0F4F5] px-2.5 py-1 text-xs font-semibold text-[#007B8A] dark:bg-[#007B8A]/20 dark:text-[#86CCD2]">
+                <span className="shrink-0 rounded-lg bg-[#86CCD2]/20 px-2.5 py-1 text-xs font-semibold text-[#86CCD2] dark:bg-[#86CCD2]/10 dark:text-[#86CCD2]">
                   {item.pts}
                 </span>
               </div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Transaction history */}
-        <div className="anim-4 rounded-2xl border border-[#86CCD2]/30 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      {/* Activity - matches other section cards */}
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          Activity
+        </h2>
+        <div className="rounded-2xl border border-[#86CCD2]/30 bg-white shadow-sm dark:border-[#86CCD2]/20 dark:bg-zinc-900">
           <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Activity
+            <p className="text-xs font-medium text-[#666666] dark:text-zinc-400">
+              Recent transactions
             </p>
             <p className="text-[11px] text-zinc-400">
               {data?.history?.length ?? 0} transactions
@@ -318,11 +303,10 @@ export default function RewardsPage() {
                 <div
                   key={idx}
                   className="flex items-center justify-between px-4 py-3"
-                  style={{ animation: `fadeUp 0.4s ease both ${0.45 + idx * 0.04}s` }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E0F4F5] dark:bg-[#007B8A]/20">
-                      <svg className="h-3.5 w-3.5 text-[#007B8A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#86CCD2]/20">
+                      <svg className="h-3.5 w-3.5 text-[#86CCD2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                     </div>
@@ -333,7 +317,7 @@ export default function RewardsPage() {
                       <p className="text-[11px] text-zinc-400">{formatDate(tx.date)}</p>
                     </div>
                   </div>
-                  <span className="rewards-display shrink-0 text-base font-medium text-[#007B8A]">
+                  <span className="shrink-0 text-base font-semibold text-[#86CCD2]">
                     +{tx.points}
                   </span>
                 </div>
@@ -341,17 +325,7 @@ export default function RewardsPage() {
             </div>
           )}
         </div>
-
-        {/* SP Group attribution footer */}
-        <div className="anim-5 mt-6 flex items-center justify-center gap-2 opacity-50">
-          <svg className="h-4 w-4 text-[#007B8A]" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.72L13 17v5h5l-1.22-1.22C19.91 19.07 22 15.76 22 12c0-5.18-3.95-9.45-9-9.95zM11 2.05C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h5v-5l-2.28 2.28C7.81 18 6 15.21 6 12c0-4.08 3.05-7.44 7-7.93V2.05z"/>
-          </svg>
-          <span className="text-[11px] font-medium text-zinc-500">
-            Powered by SP Group · Saivers
-          </span>
-        </div>
-      </div>
-    </>
+      </section>
+    </div>
   );
 }
