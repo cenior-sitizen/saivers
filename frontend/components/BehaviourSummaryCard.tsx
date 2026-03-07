@@ -1,17 +1,17 @@
 import type { ReactElement } from "react";
 
 interface BehaviourSummaryCardProps {
-  label: string;
-  value: string;
+ label: string;
+ value: string;
 }
 
 export function BehaviourSummaryCard({ label, value }: BehaviourSummaryCardProps): ReactElement {
-  return (
-    <div className="rounded-xl border border-[#86CCD2]/30 bg-white px-4 py-3 shadow-sm dark:border-[#86CCD2]/20 dark:bg-zinc-900">
-      <p className="text-xs text-[#666666] dark:text-zinc-400">{label}</p>
-      <p className="mt-1 font-semibold text-zinc-900 dark:text-zinc-50">
-        {value}
-      </p>
-    </div>
-  );
+ return (
+ <div className="rounded-xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-3 shadow-[0_8px_24px_rgba(0,123,138,0.07)]">
+ <p className="text-xs text-[#666666]">{label}</p>
+ <p className="mt-1 font-semibold text-[#10363b]">
+ {value}
+ </p>
+ </div>
+ );
 }

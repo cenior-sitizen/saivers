@@ -12,7 +12,12 @@ interface WeeklyInsight {
   notification_body: string;
   ai_summary: string;
   recommendation_type: string;
-  recommendation: { action: string; start_time?: string; end_time?: string; temp_c?: number };
+  recommendation: {
+    action: string;
+    start_time?: string;
+    end_time?: string;
+    temp_c?: number;
+  };
   status: "unread" | "read" | "approved" | "dismissed";
   this_week_kwh: number;
   change_pct: number;
@@ -26,10 +31,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  unread: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-400",
-  read: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400",
-  approved: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-  dismissed: "bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500",
+  unread: "bg-sky-100 text-sky-700",
+  read: "bg-[#eef6f6] text-[#6f8c91]",
+  approved: "bg-emerald-100 text-emerald-700",
+  dismissed: "bg-[#eef6f6] text-[#6f8c91]",
 };
 
 function formatWeek(weekStart: string): string {
@@ -254,23 +259,23 @@ export function NotificationBell({ householdId }: { householdId: number }) {
           style={{ animation: "slideUpFade 0.3s ease-out" }}
         >
           <div
-            className={`rounded-2xl border shadow-2xl ${
+            className={`rounded-2xl border shadow-[0_20px_50px_rgba(0,74,82,0.18)] backdrop-blur-xl ${
               isActionable(toast)
-                ? "border-[#007B8A]/30 bg-white dark:bg-zinc-900"
-                : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+                ? "border-[#007B8A]/30 bg-gradient-to-b from-[rgba(255,255,255,0.96)] to-[rgba(243,249,249,0.92)]"
+                : "border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.96)] to-[rgba(243,249,249,0.92)]"
             }`}
           >
             {/* Toast header */}
-            <div className="flex items-start gap-3 px-4 pt-4 pb-3">
+            <div className="flex items-start gap-3 px-4 pb-3 pt-4">
               <div
                 className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                   isActionable(toast)
-                    ? "bg-[#E0F4F5] dark:bg-[#007B8A]/20"
-                    : "bg-zinc-100 dark:bg-zinc-800"
+                    ? "bg-[#E0F4F5]"
+                    : "bg-[#eef6f6]"
                 }`}
               >
                 <svg
-                  className={`h-4 w-4 ${isActionable(toast) ? "text-[#007B8A]" : "text-zinc-500"}`}
+                  className={`h-4 w-4 ${isActionable(toast) ? "text-[#007B8A]" : "text-[#6f8c91]"}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -283,17 +288,17 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                   />
                 </svg>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-snug text-zinc-900 dark:text-zinc-50">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold leading-snug text-[#10363b]">
                   {toast.notification_title}
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                <p className="mt-1 text-xs leading-relaxed text-[#6f8c91]">
                   {toast.notification_body}
                 </p>
               </div>
               <button
                 onClick={dismissToast}
-                className="shrink-0 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+                className="shrink-0 rounded-full p-1 text-[#6f8c91] hover:bg-[#86CCD2]/10 hover:text-[#4d6b70]"
                 aria-label="Dismiss notification"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,18 +309,18 @@ export function NotificationBell({ householdId }: { householdId: number }) {
 
             {/* Toast actions for ac_schedule insights */}
             {isActionable(toast) && (
-              <div className="flex gap-2 border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">
+              <div className="flex gap-2 border-t border-[rgba(157,207,212,0.25)] px-4 py-3">
                 <button
                   disabled={toastActioning}
                   onClick={handleToastApprove}
-                  className="flex-1 rounded-lg bg-[#007B8A] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-gradient-to-b from-[#86CCD2] to-[#007B8A] px-3 py-2 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,123,138,0.25)] transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {toastActioning ? "Applying…" : "✓ Approve"}
                 </button>
                 <button
                   disabled={toastActioning}
                   onClick={handleToastDismiss}
-                  className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-500 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  className="rounded-xl border border-[rgba(157,207,212,0.40)] px-3 py-2 text-xs font-medium text-[#4d6b70] hover:bg-[#86CCD2]/10 disabled:opacity-50"
                 >
                   Dismiss
                 </button>
@@ -323,9 +328,9 @@ export function NotificationBell({ householdId }: { householdId: number }) {
             )}
 
             {/* Progress bar: 15s auto-dismiss */}
-            <div className="h-0.5 w-full overflow-hidden rounded-b-2xl bg-zinc-100 dark:bg-zinc-800">
+            <div className="h-0.5 w-full overflow-hidden rounded-b-2xl bg-[rgba(134,204,210,0.15)]">
               <div
-                className="h-full bg-[#86CCD2]"
+                className="h-full bg-gradient-to-r from-[#86CCD2] to-[#007B8A]"
                 style={{ animation: "shrinkWidth 15s linear forwards" }}
               />
             </div>
@@ -337,7 +342,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={handleOpen}
-          className="relative rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          className={`relative rounded-full p-2 text-[#4d6b70] transition-all hover:bg-[#86CCD2]/10 hover:text-[#007B8A] ${unreadCount > 0 ? "bell-pulse" : ""}`}
           aria-label="Notifications"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -349,7 +354,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
             />
           </svg>
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-[#d94f5c] to-[#b83a45] text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(217,79,92,0.50)]">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -357,40 +362,40 @@ export function NotificationBell({ householdId }: { householdId: number }) {
 
         {/* Dropdown */}
         {open && (
-          <div className="absolute right-0 top-11 z-50 max-h-[520px] w-[340px] overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 sm:w-[380px]">
+          <div className="absolute right-0 top-11 z-50 max-h-[520px] w-[340px] overflow-y-auto rounded-2xl border border-[rgba(157,207,212,0.40)] bg-[rgba(251,254,254,0.96)] shadow-[0_24px_60px_rgba(0,74,82,0.16)] backdrop-blur-xl sm:w-[380px]">
             {/* Header */}
-            <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="sticky top-0 flex items-center justify-between border-b border-[rgba(157,207,212,0.25)] bg-[rgba(251,254,254,0.95)] px-4 py-3 backdrop-blur-xl">
               <div>
-                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                <span className="font-display text-sm font-bold text-[#10363b]">
                   AI Insights
                 </span>
                 {unreadCount > 0 && (
-                  <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                  <span className="ml-2 rounded-full bg-[rgba(217,79,92,0.10)] px-2 py-0.5 text-[10px] font-semibold text-[#d94f5c]">
                     {unreadCount} new
                   </span>
                 )}
               </div>
-              <span className="text-xs text-zinc-400">{insights.length} total</span>
+              <span className="text-xs text-[#6f8c91]">{insights.length} total</span>
             </div>
 
             {loading && (
               <div className="space-y-3 p-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+                  <div key={i} className="h-16 animate-pulse rounded-xl bg-[#eef6f6]" />
                 ))}
               </div>
             )}
 
             {!loading && insights.length === 0 && (
               <div className="p-8 text-center">
-                <svg className="mx-auto mb-3 h-8 w-8 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="mx-auto mb-3 h-8 w-8 text-[#86CCD2]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                <p className="text-sm text-zinc-400">No insights yet.</p>
+                <p className="text-sm text-[#6f8c91]">No insights yet.</p>
               </div>
             )}
 
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            <div className="divide-y divide-[rgba(157,207,212,0.20)]">
               {insights.map((insight) => {
                 const isActioning = actioning === insight.insight_id;
                 const resultMsg = approveResult[insight.insight_id];
@@ -404,7 +409,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                     key={insight.insight_id}
                     className={`p-4 ${
                       insight.status === "unread"
-                        ? "bg-sky-50/60 dark:bg-sky-950/20"
+                        ? "bg-[rgba(134,204,210,0.08)]"
                         : ""
                     }`}
                   >
@@ -413,7 +418,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                       <Link
                         href={`/user/insights/${insight.insight_id}`}
                         onClick={() => setOpen(false)}
-                        className="flex-1 text-sm font-semibold leading-snug text-zinc-900 hover:text-[#007B8A] dark:text-zinc-50 dark:hover:text-[#86CCD2]"
+                        className="flex-1 text-sm font-semibold leading-snug text-[#10363b] hover:text-[#007B8A]"
                       >
                         {insight.notification_title}
                       </Link>
@@ -426,18 +431,18 @@ export function NotificationBell({ householdId }: { householdId: number }) {
 
                     {/* Week + signal */}
                     <div className="mb-2 flex items-center gap-2">
-                      <p className="text-[11px] text-zinc-400">
+                      <p className="text-[11px] text-[#6f8c91]">
                         Week of {formatWeek(insight.week_start)}
                       </p>
                       {hasSchedule && canAct && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
                           Action required
                         </span>
                       )}
                     </div>
 
                     {/* Body */}
-                    <p className="mb-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    <p className="mb-2 text-xs leading-relaxed text-[#4d6b70]">
                       {insight.notification_body}
                     </p>
 
@@ -445,7 +450,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                     <Link
                       href={`/user/insights/${insight.insight_id}`}
                       onClick={() => setOpen(false)}
-                      className="mb-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#007B8A] hover:underline dark:text-[#86CCD2]"
+                      className="mb-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#007B8A] hover:underline"
                     >
                       View full details
                       <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -455,11 +460,11 @@ export function NotificationBell({ householdId }: { householdId: number }) {
 
                     {/* AI summary — shown for unread/read */}
                     {(insight.status === "unread" || insight.status === "read") && (
-                      <div className="mb-3 rounded-xl bg-zinc-50 px-3 py-2.5 dark:bg-zinc-800/60">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      <div className="mb-3 rounded-xl border border-[rgba(134,204,210,0.25)] bg-[rgba(134,204,210,0.08)] px-3 py-2.5">
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#86CCD2]">
                           AI Analysis
                         </p>
-                        <p className="text-xs italic leading-relaxed text-zinc-500 dark:text-zinc-400">
+                        <p className="text-xs italic leading-relaxed text-[#4d6b70]">
                           &ldquo;{insight.ai_summary}&rdquo;
                         </p>
                       </div>
@@ -467,11 +472,11 @@ export function NotificationBell({ householdId }: { householdId: number }) {
 
                     {/* Schedule detail — shown when action available */}
                     {canAct && hasSchedule && rec?.start_time && (
-                      <div className="mb-3 flex items-center gap-2 rounded-xl border border-[#86CCD2]/30 bg-[#E0F4F5]/60 px-3 py-2 dark:border-[#007B8A]/20 dark:bg-[#007B8A]/10">
+                      <div className="mb-3 flex items-center gap-2 rounded-xl border border-[#86CCD2]/30 bg-[#E0F4F5]/60 px-3 py-2">
                         <svg className="h-3.5 w-3.5 shrink-0 text-[#007B8A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <p className="text-[11px] font-medium text-[#007B8A] dark:text-[#86CCD2]">
+                        <p className="text-[11px] font-medium text-[#007B8A]">
                           Schedule AC: {rec.start_time}–{rec.end_time} at {rec.temp_c}°C
                         </p>
                       </div>
@@ -479,7 +484,7 @@ export function NotificationBell({ householdId }: { householdId: number }) {
 
                     {/* Result message after approve */}
                     {resultMsg && (
-                      <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                      <p className="mb-3 rounded-lg bg-[rgba(15,159,110,0.08)] px-3 py-2 text-xs font-medium text-[#0f9f6e]">
                         {resultMsg}
                       </p>
                     )}
@@ -490,14 +495,14 @@ export function NotificationBell({ householdId }: { householdId: number }) {
                         <button
                           disabled={isActioning}
                           onClick={() => handleApprove(insight)}
-                          className="flex-1 rounded-lg bg-[#007B8A] px-3 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                          className="flex-1 rounded-xl bg-gradient-to-b from-[#86CCD2] to-[#007B8A] px-3 py-2 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,123,138,0.25)] transition-opacity hover:opacity-90 disabled:opacity-50"
                         >
                           {isActioning ? "Applying…" : "✓ Approve"}
                         </button>
                         <button
                           disabled={isActioning}
                           onClick={() => handleDismiss(insight)}
-                          className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-500 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                          className="rounded-xl border border-[rgba(157,207,212,0.40)] px-3 py-2 text-xs font-medium text-[#4d6b70] hover:bg-[#86CCD2]/10 disabled:opacity-50"
                         >
                           Dismiss
                         </button>
@@ -514,8 +519,8 @@ export function NotificationBell({ householdId }: { householdId: number }) {
       {/* ── CSS keyframes ─────────────────────────────────────────────────── */}
       <style>{`
         @keyframes slideUpFade {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         @keyframes shrinkWidth {
           from { width: 100%; }
