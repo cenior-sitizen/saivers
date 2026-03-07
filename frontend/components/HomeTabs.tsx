@@ -12,10 +12,7 @@ const TABS = [
   { id: "rooms", label: "Rooms" },
 ] as const;
 
-export function HomeTabs({
-  appliancesContent,
-  roomsContent,
-}: HomeTabsProps) {
+export function HomeTabs({ appliancesContent, roomsContent }: HomeTabsProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isScrollingRef = useRef(false);
@@ -45,17 +42,17 @@ export function HomeTabs({
 
   return (
     <div className="w-full">
-      {/* Tab headers - soft segmented control style */}
-      <div className="mb-4 flex gap-1 rounded-2xl bg-[#86CCD2]/15 p-1.5 dark:bg-[#86CCD2]/10">
+      {/* Tab headers - premium segmented control */}
+      <div className="mb-4 flex gap-1 rounded-2xl border border-[rgba(157,207,212,0.30)] bg-[rgba(134,204,210,0.10)] p-1.5">
         {TABS.map((tab, index) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => scrollToIndex(index)}
-            className={`flex flex-1 items-center justify-center rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`flex flex-1 items-center justify-center rounded-xl py-2.5 text-sm font-semibold transition-all duration-250 ${
               activeIndex === index
-                ? "bg-[#86CCD2] text-white shadow-sm dark:bg-[#86CCD2]/90"
-                : "bg-transparent text-[#666666] hover:bg-[#86CCD2]/10 dark:text-zinc-400 dark:hover:bg-[#86CCD2]/15"
+                ? "bg-gradient-to-b from-[#86CCD2] to-[#007B8A] text-white shadow-[0_4px_14px_rgba(0,123,138,0.28)]"
+                : "bg-transparent text-[#4d6b70] hover:bg-[#86CCD2]/15 hover:text-[#007B8A]"
             }`}
           >
             {tab.label}
