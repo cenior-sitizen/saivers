@@ -163,6 +163,37 @@ _DDLS: list[tuple[str, str]] = [
         """,
     ),
     (
+        "weekly_insights",
+        """
+        CREATE TABLE IF NOT EXISTS weekly_insights
+        (
+            insight_id          String,
+            household_id        UInt32,
+            week_start          Date,
+            generated_at        DateTime('Asia/Singapore'),
+            signal_type         LowCardinality(String),
+            ac_night_anomaly    Bool           DEFAULT 0,
+            nights_observed     UInt8          DEFAULT 0,
+            weekly_increase     Bool           DEFAULT 0,
+            this_week_kwh       Decimal(8,3),
+            last_week_kwh       Decimal(8,3),
+            change_pct          Float32,
+            weekly_cost_sgd     Decimal(8,4),
+            weekly_carbon_kg    Decimal(8,4),
+            ai_summary          String,
+            recommendation_type LowCardinality(String)  DEFAULT '',
+            recommendation_json String                  DEFAULT '{}',
+            notification_title  String,
+            notification_body   String,
+            status              LowCardinality(String)  DEFAULT 'unread',
+            updated_at          DateTime('Asia/Singapore') DEFAULT now()
+        )
+        ENGINE = ReplacingMergeTree(updated_at)
+        PARTITION BY toYYYYMM(week_start)
+        ORDER BY (household_id, week_start, insight_id)
+        """,
+    ),
+    (
         "neighborhood_rollup_mv",
         """
         CREATE MATERIALIZED VIEW IF NOT EXISTS neighborhood_rollup_mv
