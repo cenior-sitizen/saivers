@@ -1,13 +1,21 @@
 /**
  * ClickHouse client for server-side API routes.
  * Uses env: CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_DB
+ * Set CLICKHOUSE_ENABLED=false to skip ClickHouse and use FastAPI backend instead.
  */
 
 import { createClient, ClickHouseClient } from "@clickhouse/client";
 
 let _client: ClickHouseClient | null = null;
 
+export function isClickHouseEnabled(): boolean {
+  return process.env.CLICKHOUSE_ENABLED !== "false";
+}
+
 export function getClickHouseClient(): ClickHouseClient {
+  if (!isClickHouseEnabled()) {
+    throw new Error("ClickHouse is disabled (CLICKHOUSE_ENABLED=false)");
+  }
   if (!_client) {
     const host = process.env.CLICKHOUSE_HOST;
     const user = process.env.CLICKHOUSE_USER;

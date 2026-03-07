@@ -1,11 +1,11 @@
 /**
  * GET /api/aircon/room/[room]
- * Fetches room-level AC data from ClickHouse for the given room slug.
+ * Fetches room-level AC data from ClickHouse or FastAPI backend fallback.
  * Room slugs: master-room, room-1, room-2, living-room
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getClickHouseClient, ROOM_TO_HOUSEHOLD } from "@/lib/clickhouse";
+import { getClickHouseClient, isClickHouseEnabled, ROOM_TO_HOUSEHOLD } from "@/lib/clickhouse";
 
 const VALID_ROOMS = ["master-room", "room-1", "room-2", "living-room"];
 
@@ -21,6 +21,11 @@ export async function GET(
   const householdId = ROOM_TO_HOUSEHOLD[room];
   if (householdId === undefined) {
     return NextResponse.json({ error: "Room not mapped" }, { status: 400 });
+  }
+
+  // When ClickHouse disabled, proxy to FastAPI backend
+  if (!isClickHouseEnabled()) {
+    return fetchRoomFromBackend(room);
   }
 
   try {
@@ -132,9 +137,33 @@ export async function GET(
     });
   } catch (err) {
     console.error("[api/aircon/room]", err);
+    return fetchRoomFromBackend(room);
+  }
+}
+
+async function fetchRoomFromBackend(room: string) {
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  try {
+    const res = await fetch(`${base}/api/aircon/room/${room}`);
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "Backend unavailable" },
+        { status: 502 }
+      );
+    }
+    const data = await res.json();
+    if (data.error) {
+      return NextResponse.json(
+        { error: data.error },
+        { status: 502 }
+      );
+    }
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error("[api/aircon/room] backend fetch:", err);
     return NextResponse.json(
-      { error: "Failed to fetch room data", details: (err as Error).message },
-      { status: 500 }
+      { error: "Failed to fetch from backend" },
+      { status: 502 }
     );
   }
 }

@@ -1,6 +1,6 @@
 /**
- * Server-side data fetchers for aircon pages.
- * Uses ClickHouse directly - only call from server components or API routes.
+ * Server-side data fetchers for aircon-impact page.
+ * Uses ClickHouse only.
  */
 
 import { getClickHouseClient, HOUSEHOLD_TO_ROOM } from "./clickhouse";
@@ -11,6 +11,29 @@ const ROOM_NAMES: Record<string, string> = {
   "room-2": "Bedroom 3",
   "living-room": "Living Room",
 };
+
+const TARIFF = 0.2911;
+
+const RECOMMENDATIONS = [
+  {
+    id: "1",
+    title: "Raise set temperature by 1–2°C",
+    description:
+      "Small adjustments can reduce energy use without sacrificing comfort.",
+  },
+  {
+    id: "2",
+    title: "Use timer mode at night",
+    description:
+      "Set the AC to turn off after you fall asleep to avoid overnight waste.",
+  },
+  {
+    id: "3",
+    title: "Avoid cooling unused rooms",
+    description:
+      "Keep doors closed and turn off AC in rooms you are not using.",
+  },
+];
 
 export async function fetchImpactData() {
   try {
@@ -65,24 +88,30 @@ export async function fetchImpactData() {
 
     const thisWeek = parseFloat(weeklyJson.data?.[0]?.this_week ?? "0");
     const lastWeek = parseFloat(weeklyJson.data?.[0]?.last_week ?? "0");
-    const percentChange = lastWeek > 0 ? ((thisWeek - lastWeek) / lastWeek) * 100 : 0;
-    const tariff = 0.2911;
+    const percentChange =
+      lastWeek > 0 ? ((thisWeek - lastWeek) / lastWeek) * 100 : 0;
 
     const roomRows = roomJson.data ?? [];
     const totalKwh = roomRows.reduce((s, r) => s + parseFloat(r.total_kwh), 0);
 
+    const savedVsLastWeek =
+      lastWeek > thisWeek ? (lastWeek - thisWeek) * TARIFF : 0;
+    const projectedMonthly = Math.round(savedVsLastWeek * 4.33 * 100) / 100;
+
     return {
       summary: {
         totalKwhThisWeek: Math.round(thisWeek * 100) / 100,
-        costThisWeek: `S$${(thisWeek * tariff).toFixed(2)}`,
-        savedVsLastWeek: lastWeek > thisWeek ? (lastWeek - thisWeek) * tariff : 0,
+        costThisWeek: `S$${(thisWeek * TARIFF).toFixed(2)}`,
+        savedVsLastWeek,
+        savedThisWeekLabel: `S$${savedVsLastWeek.toFixed(2)} saved this week`,
+        projectedMonthlySavings: `S$${projectedMonthly.toFixed(2)}`,
       },
       weeklyComparison: {
         thisWeek,
         lastWeek,
         percentChange: Math.round(percentChange * 10) / 10,
-        thisWeekCost: `S$${(thisWeek * tariff).toFixed(2)}`,
-        lastWeekCost: `S$${(lastWeek * tariff).toFixed(2)}`,
+        thisWeekCost: `S$${(thisWeek * TARIFF).toFixed(2)}`,
+        lastWeekCost: `S$${(lastWeek * TARIFF).toFixed(2)}`,
       },
       chartData: (chartJson.data ?? []).map((r) => ({
         label: r.day_label,
@@ -103,9 +132,21 @@ export async function fetchImpactData() {
           trendNote: "From ClickHouse",
         };
       }),
+      savingsInsight: {
+        savedThisWeek:
+          savedVsLastWeek > 0
+            ? `You have already saved S$${savedVsLastWeek.toFixed(2)} this week compared with last week.`
+            : "Compare your usage with last week below.",
+        projectedMonthly:
+          savedVsLastWeek > 0
+            ? `If you maintain this pattern, you may save around S$${projectedMonthly.toFixed(2)} this month.`
+            : "Reduce usage to see projected savings.",
+      },
+      spikeEvents: [] as { id: string; time: string; description: string }[],
+      recommendations: RECOMMENDATIONS,
     };
   } catch (err) {
     console.error("[lib/aircon-data] fetchImpactData:", err);
-    return null;
+    throw err;
   }
 }
