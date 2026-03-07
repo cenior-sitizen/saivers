@@ -106,15 +106,17 @@ export default function RoomAirconPage() {
     usageDay?: { time: string; value: number; isOn: boolean }[];
     usageWeek?: { time: string; value: number; isOn: boolean }[];
     vsLastWeek?: { thisWeekKwh: number; lastWeekKwh: number; percentChange: number };
+    spEnergy?: { thisWeekKwh: number; lastWeekKwh: number; thisWeekCostSgd: number; thisWeekCarbonKg: number; vsLastWeekPct: number };
   } | null>(null);
 
+  // Fetch by householdId from context so persona switching updates the data
   useEffect(() => {
     if (!roomSlug || !VALID_ROOMS.includes(roomSlug)) return;
-    fetch(`/api/aircon/room/${roomSlug}`)
+    fetch(`/api/aircon/household/${householdId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => data && setApiData(data))
       .catch(() => {});
-  }, [roomSlug]);
+  }, [roomSlug, householdId]);
 
   if (!roomSlug || !VALID_ROOMS.includes(roomSlug)) {
     return (
@@ -179,6 +181,36 @@ export default function RoomAirconPage() {
 
       {/* Approved insight banner */}
       <ApprovedInsightBanner householdId={householdId} />
+
+      {/* Live weekly energy summary — data changes per persona */}
+      {apiData?.spEnergy && (
+        <div className="mb-4 grid grid-cols-3 gap-2">
+          <div className="rounded-2xl border border-[#86CCD2]/30 bg-white px-3 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <p className="text-[10px] font-medium text-zinc-400">This Week</p>
+            <p className="mt-0.5 text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              {apiData.spEnergy.thisWeekKwh} <span className="text-xs font-normal text-zinc-400">kWh</span>
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[#86CCD2]/30 bg-white px-3 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <p className="text-[10px] font-medium text-zinc-400">Weekly Cost</p>
+            <p className="mt-0.5 text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              S${apiData.spEnergy.thisWeekCostSgd.toFixed(0)}
+            </p>
+          </div>
+          <div className={`rounded-2xl border px-3 py-3 shadow-sm ${
+            apiData.spEnergy.vsLastWeekPct > 0
+              ? "border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20"
+              : "border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+          }`}>
+            <p className="text-[10px] font-medium text-zinc-400">vs Last Week</p>
+            <p className={`mt-0.5 text-lg font-bold ${
+              apiData.spEnergy.vsLastWeekPct > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+            }`}>
+              {apiData.spEnergy.vsLastWeekPct > 0 ? "+" : ""}{apiData.spEnergy.vsLastWeekPct}%
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Expandable appliance sections */}
       <div className="space-y-3">

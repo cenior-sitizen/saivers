@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { RoomCard } from "@/components/RoomCard";
 import { HomeTabs } from "@/components/HomeTabs";
-import { homeRooms } from "./mockData"; 
+import { PersonaGreeting } from "@/components/PersonaGreeting";
+import { homeRooms } from "./mockData";
 
 function AirconImpactCard() {
   return (
@@ -54,7 +55,7 @@ function AirconImpactCard() {
 export default function UserPage() {
   return (
     <div className="min-h-screen bg-[#F3F9F9] px-4 py-6 dark:bg-zinc-950 sm:mx-auto sm:max-w-md sm:px-0">
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
           My Home
         </h1>
@@ -62,6 +63,8 @@ export default function UserPage() {
           Tap a room to view appliance usage insights
         </p>
       </div>
+
+      <PersonaGreeting />
 
       <HomeTabs
         appliancesContent={
