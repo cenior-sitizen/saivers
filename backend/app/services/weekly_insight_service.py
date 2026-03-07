@@ -108,69 +108,70 @@ def get_unread_count(household_id: int) -> int:
         return 0
 
 
-def update_insight_status(insight_id: str, new_status: str) -> bool:
+class InsightNotFoundError(Exception):
+    pass
+
+
+def update_insight_status(insight_id: str, new_status: str) -> None:
     """
     Update insight status by fetching the current row and re-inserting with new status.
     ReplacingMergeTree(updated_at) keeps the latest version on FINAL queries.
+    Raises InsightNotFoundError if no row exists; propagates DB exceptions.
     """
     client = _get_client()
     if client is None:
-        return False
-    try:
-        result = client.query(
-            """
-            SELECT
-                insight_id, household_id,
-                toString(week_start)    AS week_start,
-                toString(generated_at)  AS generated_at,
-                signal_type, ac_night_anomaly, nights_observed, weekly_increase,
-                toFloat64(this_week_kwh)    AS this_week_kwh,
-                toFloat64(last_week_kwh)    AS last_week_kwh,
-                toFloat32(change_pct)       AS change_pct,
-                toFloat64(weekly_cost_sgd)  AS weekly_cost_sgd,
-                toFloat64(weekly_carbon_kg) AS weekly_carbon_kg,
-                ai_summary, recommendation_type, recommendation_json,
-                notification_title, notification_body, status
-            FROM weekly_insights FINAL
-            WHERE insight_id = {iid:String}
-            LIMIT 1
-            """,
-            parameters={"iid": insight_id},
-        )
-        rows = list(result.named_results())
-        if not rows:
-            return False
-        r = rows[0]
-        now = datetime.now(SGT).strftime("%Y-%m-%d %H:%M:%S")
-        client.insert(
-            "weekly_insights",
-            [[
-                r["insight_id"],
-                int(r["household_id"]),
-                r["week_start"],
-                r["generated_at"],
-                r["signal_type"],
-                bool(r["ac_night_anomaly"]),
-                int(r["nights_observed"]),
-                bool(r["weekly_increase"]),
-                float(r["this_week_kwh"]),
-                float(r["last_week_kwh"]),
-                float(r["change_pct"]),
-                float(r["weekly_cost_sgd"]),
-                float(r["weekly_carbon_kg"]),
-                r["ai_summary"],
-                r["recommendation_type"],
-                r["recommendation_json"],
-                r["notification_title"],
-                r["notification_body"],
-                new_status,
-                now,
-            ]],
-            column_names=COLUMN_NAMES,
-        )
-        return True
-    except Exception:
-        return False
+        raise RuntimeError("Database client unavailable")
+    result = client.query(
+        """
+        SELECT
+            insight_id, household_id,
+            toString(week_start)    AS week_start,
+            toString(generated_at)  AS generated_at,
+            signal_type, ac_night_anomaly, nights_observed, weekly_increase,
+            toFloat64(this_week_kwh)    AS this_week_kwh,
+            toFloat64(last_week_kwh)    AS last_week_kwh,
+            toFloat32(change_pct)       AS change_pct,
+            toFloat64(weekly_cost_sgd)  AS weekly_cost_sgd,
+            toFloat64(weekly_carbon_kg) AS weekly_carbon_kg,
+            ai_summary, recommendation_type, recommendation_json,
+            notification_title, notification_body, status
+        FROM weekly_insights FINAL
+        WHERE insight_id = {iid:String}
+        LIMIT 1
+        """,
+        parameters={"iid": insight_id},
+    )
+    rows = list(result.named_results())
+    if not rows:
+        raise InsightNotFoundError(f"Insight {insight_id!r} not found")
+    r = rows[0]
+    now = datetime.now(SGT).strftime("%Y-%m-%d %H:%M:%S")
+    client.insert(
+        "weekly_insights",
+        [[
+            r["insight_id"],
+            int(r["household_id"]),
+            r["week_start"],
+            r["generated_at"],
+            r["signal_type"],
+            bool(r["ac_night_anomaly"]),
+            int(r["nights_observed"]),
+            bool(r["weekly_increase"]),
+            float(r["this_week_kwh"]),
+            float(r["last_week_kwh"]),
+            float(r["change_pct"]),
+            float(r["weekly_cost_sgd"]),
+            float(r["weekly_carbon_kg"]),
+            r["ai_summary"],
+            r["recommendation_type"],
+            r["recommendation_json"],
+            r["notification_title"],
+            r["notification_body"],
+            new_status,
+            now,
+        ]],
+        column_names=COLUMN_NAMES,
+    )
 
 
 def approve_insight(insight_id: str, household_id: int) -> dict:
@@ -221,8 +222,11 @@ def approve_insight(insight_id: str, household_id: int) -> dict:
         except Exception as e:
             applied = {"error": str(e)}
 
-    # Update status
-    update_insight_status(insight_id, "approved")
+    # Update status (best-effort — don't fail the whole approve if status update fails)
+    try:
+        update_insight_status(insight_id, "approved")
+    except Exception:
+        pass
 
     return {
         "success": True,

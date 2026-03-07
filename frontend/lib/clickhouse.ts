@@ -32,6 +32,7 @@ export function getClickHouseClient(): ClickHouseClient {
       password,
       database,
       request_timeout: 15_000,
+      keep_alive: { enabled: false },
     });
   }
   return _client;

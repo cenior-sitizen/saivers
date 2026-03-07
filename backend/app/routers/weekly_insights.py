@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.services.weekly_insight_service import (
+    InsightNotFoundError,
     approve_insight,
     get_unread_count,
     get_weekly_insights,
@@ -44,9 +45,12 @@ def unread_count(household_id: int):
 
 @router.post("/weekly/{insight_id}/read")
 def mark_read(insight_id: str):
-    ok = update_insight_status(insight_id, "read")
-    if not ok:
-        raise HTTPException(status_code=404, detail="Insight not found")
+    try:
+        update_insight_status(insight_id, "read")
+    except InsightNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Insight not found: {insight_id}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
     return {"insight_id": insight_id, "status": "read"}
 
 
@@ -60,9 +64,12 @@ def approve(insight_id: str, body: ActionRequest):
 
 @router.post("/weekly/{insight_id}/dismiss")
 def dismiss(insight_id: str):
-    ok = update_insight_status(insight_id, "dismissed")
-    if not ok:
-        raise HTTPException(status_code=404, detail="Insight not found")
+    try:
+        update_insight_status(insight_id, "dismissed")
+    except InsightNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Insight not found: {insight_id}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
     return {"insight_id": insight_id, "status": "dismissed"}
 
 
