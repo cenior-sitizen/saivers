@@ -33,18 +33,18 @@ _AI_SUMMARIES: dict[int, list[str]] = {
         "Ahmad, your energy use jumped 34% compared to the previous week — the main culprit is overnight AC running from midnight to 4am. At 20°C all night, your unit draws nearly 900W non-stop. Set your AC to auto-off at 2am.",
         "Ahmad, for the third week in a row, your AC has been running past midnight. This pattern costs you around S$50 extra per month. Setting a timer takes 30 seconds — tap Approve to do it now.",
         "Ahmad, late-night AC usage is again your top energy driver this week. Your unit ran 28 hours overnight, consuming 25.2 kWh above baseline. A simple timer would recover that saving automatically every night.",
-        "Ahmad, your weekly bill hit S$75 — that's 2.7× what Wei Ming pays next door (S$27). Your overnight AC (midnight to 5am at 20°C) is the single biggest driver. Tap Approve to auto-schedule a 2am cut-off tonight.",
+        "Ahmad, your weekly bill hit S$75 — that's 2.7× what your most efficient neighbour pays. Your overnight AC (midnight to 5am at 20°C) is the single biggest driver. Tap Approve to auto-schedule a 2am cut-off tonight.",
         "Ahmad, this is the second alert you haven't acted on. Your AC ran past midnight every night this week. That's S$4.20 in pure waste per week — S$218 a year — just from the overnight hours. One tap fixes it.",
-        "Ahmad, you now have 3 unread energy alerts. Each week you delay costs S$4.20 in avoidable overnight AC charges. Your total bill of S$74/week is S$47 more than Wei Ming's S$27. Tap Approve — it takes 2 seconds.",
+        "Ahmad, you now have 3 unread energy alerts. Each week you delay costs S$4.20 in avoidable overnight AC charges. Your total bill of S$74/week is S$47 more than your most efficient neighbour. Tap Approve — it takes 2 seconds.",
     ],
     1002: [
         "Priya, your energy use was 9% higher than the previous week, mostly due to longer evening AC hours. Your unit averaged 23°C — raising it to 25°C would save around S$4/month without sacrificing comfort.",
         "Priya, great news — your AC usage was well-managed this week. No overnight usage detected. Maintaining this pattern puts you on track for a 7-day streak and 20 extra reward points.",
         "Priya, energy use rose 11% this week, driven by peak-hour AC during the heatwave. To stay on target, consider pre-cooling your home to 24°C before 7pm, then raising to 26°C by 9pm.",
-        "Priya, your AC ran 3 hours more than your usual evening window this week. You're still well below Mdm Siti's usage next door. Keep your timer set and you'll maintain your 3-day streak.",
+        "Priya, your AC ran 3 hours more than your usual evening window this week. You're still well below the neighbourhood average. Keep your timer set and you'll maintain your 3-day streak.",
         "Priya, another solid week — energy use is down 5% vs last week. Your habit of keeping AC off past midnight is now a 5-day streak. Just 2 more days to hit your 7-day milestone and earn 100 bonus points!",
         "Priya, excellent consistency this week. Your evening AC pattern (6pm–11:30pm at 24°C) is a model for the neighbourhood. You've now saved an estimated S$22 over the past month.",
-        "Priya, your energy use rose 9% this week against last week. Your AC averaged 23°C — nudging it to 25°C could save S$4/month. Tap Approve to apply the recommended setting automatically.",
+        "Priya, your energy use was stable this week — nearly flat vs last week. Your AC averaged 23°C — nudging it to 25°C could save S$4/month. Tap Approve to apply the recommended setting automatically.",
     ],
     1003: [
         "Wei Ming, outstanding week — your energy use was 9% below your 4-week rolling average. You saved 8.4 kWh, equivalent to S$2.45 and 3.4 kg CO₂. Your neighbourhood thanks you!",
@@ -60,7 +60,7 @@ _AI_SUMMARIES: dict[int, list[str]] = {
 _NOTIFICATION_TITLES: dict[int, list[str]] = {
     1001: [
         "Your AC ran past midnight — 6 nights this week",
-        "S$76 energy bill this week — 2.7× your neighbour",
+        "S$76 energy bill this week — 2.7× your most efficient neighbour",
         "3 weeks of overnight AC — S$50/month avoidable cost",
         "28 hours of overnight AC detected this week",
         "Alert: S$75 energy bill — act now or miss savings",
@@ -74,7 +74,7 @@ _NOTIFICATION_TITLES: dict[int, list[str]] = {
         "AC ran 3 hours longer than usual this week",
         "Energy down 5% — 5-day streak achieved",
         "Consistent week — S$22 saved this month",
-        "Energy up 9% — AC thermostat tip available",
+        "Stable week — AC thermostat tip to save more",
     ],
     1003: [
         "Excellent week — 9% below your average",
@@ -90,12 +90,12 @@ _NOTIFICATION_TITLES: dict[int, list[str]] = {
 _NOTIFICATION_BODIES: dict[int, list[str]] = {
     1001: [
         "Setting an auto-off timer could save S$3.60 this week.",
-        "You spent S$76 this week. Wei Ming next door spent S$27. Auto-schedule closes the gap.",
+        "You spent S$76 this week. Your most efficient neighbour spent S$27. Auto-schedule closes the gap.",
         "Tap Approve — your AC will auto-off at 2am tonight.",
         "28 hours overnight costs S$4.20 extra. One tap to fix.",
         "S$75 this week vs neighbourhood average of S$43. Tap Approve to start saving tonight.",
         "Your AC ran past midnight again — 2 alerts already ignored. Approve now to auto-off at 2am.",
-        "S$74/week vs Wei Ming's S$27. That's S$2,444 a year difference. Tap Approve to auto-schedule.",
+        "S$74/week vs your most efficient neighbour's S$27. That's S$2,444 a year difference. Tap Approve to auto-schedule.",
     ],
     1002: [
         "Raising AC to 25°C saves ~S$4/month. Tap to apply.",
