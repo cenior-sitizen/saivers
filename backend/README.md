@@ -1788,3 +1788,96 @@ const data = await res.json();
 ```
 
 ---
+
+## Changelog — What Changed (Backend → Frontend handoff)
+
+### 2026-03-07 — Rooms & Appliances Support
+
+**What we added:**
+
+All 4 AC rooms per household are now tracked in ClickHouse with 90 days of real usage data. Previously only the Living Room was tracked. We added a new endpoint that returns the room list with per-room appliance data.
+
+**New endpoint:**
+
+```
+GET /api/devices/rooms/{household_id}
+```
+
+Example: `http://localhost:8000/api/devices/rooms/1001`
+
+Returns an array of exactly 4 room objects, always in this order:
+1. Living Room (`slug: "living-room"`)
+2. Master Room (`slug: "master-room"`)
+3. Room 1 (`slug: "room-1"`)
+4. Room 2 (`slug: "room-2"`)
+
+**What you need to change in the frontend:**
+
+**1. `app/user/mockData.ts` — replace `homeRooms` static array**
+
+```ts
+const res   = await fetch("http://localhost:8000/api/devices/rooms/1001");
+const rooms = await res.json();
+// Use rooms[].room_name for display
+// Use rooms[].slug for href: /user/aircon/{slug}
+```
+
+**2. `app/user/aircon-impact/mockData.ts` — replace `roomUsageData`**
+
+Use the same `/api/devices/rooms/1001` response. Field mapping:
+
+| Your mockData field | API field | Notes |
+|---|---|---|
+| `name` | `room_name` | e.g. `"Living Room"` |
+| `status` | `status` | `"On"` or `"Off"` — map to `"Running"` / `"Idle"` as your component needs |
+| `usageKwh` | `kwh_this_week` | weekly total kWh for this room |
+| `percentOfTotal` | `percent_of_total` | always sums to 100 across 4 rooms |
+| `runtimeHours` | `runtime_week_hours` | hours the AC ran this week |
+| `avgTempC` | `avg_temp_c` | average set temperature while on |
+| `trendNote` | build from `trend_vs_last_week_pct` | e.g. `"-5.2% vs last week"` — negative means improved |
+
+**3. `app/user/aircon/[room]/mockData.ts` — replace `roomDataMap`**
+
+For the per-room detail page, filter the same array by `slug`:
+
+```ts
+const res   = await fetch("http://localhost:8000/api/devices/rooms/1001");
+const rooms = await res.json();
+const room  = rooms.find(r => r.slug === params.room);
+```
+
+Field mapping for `StatusSummaryCard` and the room header:
+
+| Your mockData field | API field |
+|---|---|
+| `status` | `status` (`"On"` / `"Off"`) |
+| `temperature` | `temp_setting_c` |
+| `runtimeTodayHours` | `runtime_today_hours` |
+| `energyTodayKwh` | `kwh_today` |
+| `trendVsPrevious` | `trend_vs_last_week_pct` |
+
+**Important notes:**
+- All 4 rooms are always returned — no nulls, no missing rooms
+- If a room has no data yet, all numeric fields are `0` (safe to render)
+- `trend_vs_last_week_pct` is **negative** = good (usage went down), **positive** = usage went up
+- `percent_of_total` always sums to 100 across the 4 rooms
+
+---
+
+### 2026-03-07 — Weekly Bill Endpoint
+
+**What we added:**
+
+Real daily electricity cost data from ClickHouse, replacing the static `mockData.ts` on the aircon-impact page.
+
+**New endpoint:**
+
+```
+GET /api/usage/weekly-bill/{household_id}
+```
+
+Example: `http://localhost:8000/api/usage/weekly-bill/1001`
+
+See the **Weekly Bill Endpoint** section above for the full response shape and field mapping.
+
+---
