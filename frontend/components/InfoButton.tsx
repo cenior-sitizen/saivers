@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const INFO_MESSAGE =
   "To change your decision, you can turn it off in the smart home app itself.";
@@ -13,6 +14,7 @@ interface InfoButtonProps {
 export function InfoButton({ message = INFO_MESSAGE, className = "" }: InfoButtonProps) {
   const [show, setShow] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -23,6 +25,26 @@ export function InfoButton({ message = INFO_MESSAGE, className = "" }: InfoButto
     if (show) document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [show]);
+
+  // Position tooltip via portal so it's not clipped by overflow-hidden parents
+  const tooltip = show && ref.current && typeof document !== "undefined" && (
+    createPortal(
+      <div
+        ref={tooltipRef}
+        className="fixed z-[9999] min-w-[200px] max-w-[260px] rounded-xl border border-[#86CCD2]/30 bg-white p-3 text-xs text-zinc-600 shadow-lg dark:border-[#86CCD2]/20 dark:bg-zinc-800 dark:text-zinc-300"
+        style={{
+          top: ref.current.getBoundingClientRect().bottom + 6,
+          right: window.innerWidth - ref.current.getBoundingClientRect().right,
+          left: "auto",
+          maxWidth: "min(260px, 100vw - 24px)",
+        }}
+      >
+        {message}
+        <div className="absolute -top-1.5 right-3 h-2 w-2 rotate-45 border-l border-t border-[#86CCD2]/30 bg-white dark:border-[#86CCD2]/20 dark:bg-zinc-800" />
+      </div>,
+      document.body
+    )
+  );
 
   return (
     <div className={`relative ${className}`} ref={ref}>
@@ -44,12 +66,7 @@ export function InfoButton({ message = INFO_MESSAGE, className = "" }: InfoButto
           />
         </svg>
       </button>
-      {show && (
-        <div className="absolute right-0 top-8 z-50 min-w-[200px] max-w-[260px] rounded-xl border border-[#86CCD2]/30 bg-white p-3 text-xs text-zinc-600 shadow-lg dark:border-[#86CCD2]/20 dark:bg-zinc-800 dark:text-zinc-300">
-          {message}
-          <div className="absolute -top-1.5 right-3 h-2 w-2 rotate-45 border-l border-t border-[#86CCD2]/30 bg-white dark:border-[#86CCD2]/20 dark:bg-zinc-800" />
-        </div>
-      )}
+      {tooltip}
     </div>
   );
 }

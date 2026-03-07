@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 interface DragHandleProps {
   draggable?: boolean;
@@ -29,6 +29,7 @@ export function CollapsibleDrawer({
   dragHandleProps,
 }: CollapsibleDrawerProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const pointerDownTargetRef = useRef<EventTarget | null>(null);
 
   const mainRow = (
       <>
@@ -57,7 +58,21 @@ export function CollapsibleDrawer({
             {title}
           </span>
           {trailing && (
-            <div onClick={(e) => e.stopPropagation()} className="flex shrink-0">
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                pointerDownTargetRef.current = e.target;
+              }}
+              onPointerUp={() => {
+                pointerDownTargetRef.current = null;
+              }}
+              onPointerLeave={() => {
+                pointerDownTargetRef.current = null;
+              }}
+              data-no-drag
+              className="flex shrink-0"
+            >
               {trailing}
             </div>
           )}
@@ -76,13 +91,26 @@ export function CollapsibleDrawer({
       </>
     );
 
+  const handleDragStart = (e: React.DragEvent) => {
+    const target = pointerDownTargetRef.current as HTMLElement | null;
+    if (target?.closest?.("[data-no-drag]")) {
+      e.preventDefault();
+      e.dataTransfer.effectAllowed = "none";
+      return;
+    }
+    dragHandleProps?.onDragStart?.(e);
+  };
+
   return (
     <div className="mb-4 overflow-hidden rounded-2xl border border-[#86CCD2]/30 bg-white dark:border-[#86CCD2]/20 dark:bg-zinc-900">
       {dragHandleProps ? (
         <div
           draggable={dragHandleProps.draggable}
-          onDragStart={dragHandleProps.onDragStart}
-          onDragEnd={dragHandleProps.onDragEnd}
+          onDragStart={handleDragStart}
+          onDragEnd={() => {
+            pointerDownTargetRef.current = null;
+            dragHandleProps.onDragEnd?.();
+          }}
           className="flex cursor-grab items-center active:cursor-grabbing"
         >
           {mainRow}
