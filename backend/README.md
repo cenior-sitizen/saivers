@@ -1154,3 +1154,420 @@ Reviewer (Codex) summary: "Strong plan with clear product thesis, good Singapore
 ---
 
 *WattCoach — Turning half-hourly data into lasting habits that help the grid.*
+
+---
+
+---
+
+# Backend Implementation Plan (HackOMania 2026)
+
+> 2 Backend Developers · ~12 Hours
+> Stack: Python (FastAPI) + ClickHouse Cloud + OpenAI GPT-4o
+> Reviewed by Codex — workload_balance 8/10, dependency_order 9/10, hackathon_feasibility 8/10, schema_quality 9/10, demo_credibility 9/10
+
+## Core Demo Loop
+
+```
+mock ingest → anomaly summary → OpenAI insight → mock AC action → admin aggregate
+```
+
+Everything else (habit tracking, rewards, chat) is built on top of this loop.
+
+---
+
+## Backend Stack
+
+| Component | Technology |
+|---|---|
+| API Server | FastAPI (Python 3.11+) |
+| Analytics DB | ClickHouse Cloud (clickhouse-connect) |
+| LLM | OpenAI GPT-4o |
+| Data Validation | Pydantic v2 |
+| Config | python-dotenv |
+
+---
+
+## ClickHouse Schema (Final DDL)
+
+> Rules applied: `LowCardinality` for low-cardinality strings, no `Nullable`, `UInt8` for slot_idx (0-47), monthly partitioning, ORDER BY lowest→highest cardinality, append-only (no ALTER TABLE UPDATE).
+
+```sql
+-- Table 1: SP Group half-hourly household energy intervals
+CREATE TABLE IF NOT EXISTS sp_energy_intervals
+(
+    household_id      UInt32,
+    neighborhood_id   LowCardinality(String),
+    flat_type         LowCardinality(String),
+    ts                DateTime('Asia/Singapore'),
+    interval_date     Date        MATERIALIZED toDate(ts),
+    slot_idx          UInt8       MATERIALIZED (toHour(ts) * 2 + intDiv(toMinute(ts), 30)),
+    kwh               Decimal(8,3),
+    cost_sgd          Decimal(8,4),
+    carbon_kg         Decimal(8,4),
+    peak_flag         Bool        DEFAULT 0,
+    dr_event_flag     Bool        DEFAULT 0,
+    ingestion_ts      DateTime    DEFAULT now()
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(interval_date)
+ORDER BY (neighborhood_id, household_id, interval_date, ts);
+
+-- Table 2: AC appliance sensor readings
+CREATE TABLE IF NOT EXISTS ac_readings
+(
+    household_id      UInt32,
+    device_id         LowCardinality(String),
+    ts                DateTime('Asia/Singapore'),
+    reading_date      Date        MATERIALIZED toDate(ts),
+    slot_idx          UInt8       MATERIALIZED (toHour(ts) * 2 + intDiv(toMinute(ts), 30)),
+    power_w           Float32,
+    kwh               Decimal(8,3),
+    temp_setting_c    UInt8,
+    is_on             Bool,
+    mode              LowCardinality(String)  DEFAULT 'cool',
+    ingestion_ts      DateTime                DEFAULT now()
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(reading_date)
+ORDER BY (household_id, device_id, reading_date, ts);
+
+-- Table 3: Computed features / baselines (ReplacingMergeTree — never ALTER TABLE UPDATE)
+CREATE TABLE IF NOT EXISTS energy_features
+(
+    household_id      UInt32,
+    ts                DateTime('Asia/Singapore'),
+    interval_date     Date,
+    slot_idx          UInt8,
+    baseline_kwh      Decimal(8,3),
+    excess_kwh        Decimal(8,3),
+    anomaly_score     Float32,
+    shiftable         Bool,
+    version_ts        DateTime    DEFAULT now()
+)
+ENGINE = ReplacingMergeTree(version_ts)
+PARTITION BY toYYYYMM(interval_date)
+ORDER BY (household_id, interval_date, ts);
+
+-- Table 4: Habit events (append-only)
+CREATE TABLE IF NOT EXISTS habit_events
+(
+    household_id      UInt32,
+    habit_type        LowCardinality(String),
+    event_date        Date,
+    achieved          Bool,
+    threshold_kwh     Decimal(8,3),
+    actual_kwh        Decimal(8,3),
+    streak_day        UInt16,
+    ingestion_ts      DateTime    DEFAULT now()
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(event_date)
+ORDER BY (household_id, event_date, habit_type);
+
+-- Table 5: Reward transactions (append-only — balance via SUM at query time)
+CREATE TABLE IF NOT EXISTS reward_transactions
+(
+    household_id      UInt32,
+    reward_type       LowCardinality(String),
+    points_earned     UInt32,
+    reason            String,
+    voucher_label     String      DEFAULT '',
+    created_at        DateTime    DEFAULT now()
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (household_id, created_at);
+
+-- Table 6: Device (AC) actions log
+CREATE TABLE IF NOT EXISTS device_actions
+(
+    household_id          UInt32,
+    device_id             LowCardinality(String),
+    action_type           LowCardinality(String),
+    params_json           String,
+    status                LowCardinality(String)  DEFAULT 'scheduled',
+    projected_kwh_saved   Decimal(8,3),
+    projected_sgd_saved   Decimal(8,4),
+    created_at            DateTime    DEFAULT now()
+)
+ENGINE = MergeTree
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (household_id, created_at);
+
+-- Table 7: Neighborhood rollup (AggregatingMergeTree + Materialized View)
+CREATE TABLE IF NOT EXISTS neighborhood_rollup
+(
+    neighborhood_id   LowCardinality(String),
+    interval_date     Date,
+    slot_idx          UInt8,
+    total_kwh         AggregateFunction(sum,  Decimal(12,3)),
+    active_homes      AggregateFunction(uniq, UInt32)
+)
+ENGINE = AggregatingMergeTree
+PARTITION BY toYYYYMM(interval_date)
+ORDER BY (neighborhood_id, interval_date, slot_idx);
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS neighborhood_rollup_mv
+TO neighborhood_rollup AS
+SELECT neighborhood_id, interval_date, slot_idx,
+    sumState(kwh) AS total_kwh, uniqState(household_id) AS active_homes
+FROM sp_energy_intervals
+GROUP BY neighborhood_id, interval_date, slot_idx;
+```
+
+---
+
+## Project File Structure
+
+```
+backend/
+├── app/
+│   ├── main.py                    # FastAPI app, CORS, routers
+│   ├── data/
+│   │   └── households.py          # Shared HOUSEHOLDS list (1001-1010)
+│   ├── routers/
+│   │   ├── insights.py            # /api/insights/*
+│   │   ├── devices.py             # /api/devices/*
+│   │   ├── habits.py              # /api/habits/*
+│   │   └── admin.py               # /api/admin/*
+│   ├── services/
+│   │   ├── ai_service.py          # OpenAI client wrapper
+│   │   ├── insight_service.py     # Anomaly → OpenAI prompt → insight
+│   │   ├── anomaly_service.py     # ClickHouse anomaly queries
+│   │   ├── device_store.py        # In-memory AC state + ClickHouse log
+│   │   ├── habit_service.py       # Streak/threshold evaluation
+│   │   └── reward_service.py      # Points + voucher logic
+│   ├── db/
+│   │   ├── client.py              # ClickHouse singleton
+│   │   └── migrations.py          # All DDL CREATE TABLE statements
+│   └── models/
+│       ├── household.py
+│       ├── insight.py
+│       ├── device.py
+│       └── habit.py
+├── scripts/
+│   ├── generate_sp_data.py        # 43,200 SP interval rows
+│   ├── generate_ac_data.py        # 43,200 AC readings (correlated)
+│   ├── seed_clickhouse.py         # Batch insert (50K rows/batch)
+│   ├── compute_features.py        # Baselines + anomaly scores
+│   └── simulate_realtime.py       # Demo: stream live AC readings via HTTP
+├── .env.example
+└── requirements.txt
+```
+
+---
+
+## DEVELOPER A — Data Foundation (5–6 hrs)
+
+### Phase A1 — ClickHouse Setup (1.5 hrs)
+> **Do this first — all other tasks depend on it**
+
+- [ ] **A1.1** Create ClickHouse Cloud service, get credentials
+- [ ] **A1.2** Install: `pip install clickhouse-connect python-dotenv`
+- [ ] **A1.3** Create `app/db/client.py` — singleton via `clickhouse_connect.get_client()`
+- [ ] **A1.4** Create `app/db/migrations.py` — runs all 7 DDLs above (`python -m app.db.migrations`)
+- [ ] **A1.5** Run 2 smoke-test queries to verify connectivity
+
+### Phase A2 — Mock Data Generation (2 hrs)
+> **Dependency: A1 done**
+
+**Shared household profiles** (create `app/data/households.py`, Dev B imports same file):
+```python
+HOUSEHOLDS = [
+    {"household_id": 1001, "name": "Ahmad",    "flat_type": "4-room HDB", "block": "Blk 601 Punggol Drive"},
+    {"household_id": 1002, "name": "Priya",    "flat_type": "4-room HDB", "block": "Blk 612 Punggol Way"},
+    {"household_id": 1003, "name": "Wei Ming", "flat_type": "5-room HDB", "block": "Blk 623 Punggol Central"},
+    {"household_id": 1004, "name": "Siti",     "flat_type": "4-room HDB", "block": "Blk 634 Punggol Road"},
+    {"household_id": 1005, "name": "Rajan",    "flat_type": "4-room HDB", "block": "Blk 645 Punggol Field"},
+    {"household_id": 1006, "name": "Li Ling",  "flat_type": "5-room HDB", "block": "Blk 656 Punggol Place"},
+    {"household_id": 1007, "name": "Muthu",    "flat_type": "4-room HDB", "block": "Blk 667 Punggol Park"},
+    {"household_id": 1008, "name": "Xiao Hua", "flat_type": "5-room HDB", "block": "Blk 678 Punggol East"},
+    {"household_id": 1009, "name": "Zainab",   "flat_type": "4-room HDB", "block": "Blk 689 Punggol West"},
+    {"household_id": 1010, "name": "Chandra",  "flat_type": "Condo",      "block": "Waterway Terraces I"},
+]
+# All: neighborhood_id='punggol', device_id='ac-living-room'
+```
+
+- [ ] **A2.1** Create `scripts/generate_sp_data.py` — 43,200 rows (90 days × 48 slots × 10 households)
+  - Slot 0–13 (midnight–7am): 0.03–0.08 kWh (fridge baseline)
+  - Slot 14–35 (7am–6pm): 0.10–0.30 kWh
+  - Slot 36–45 (6pm–11pm): **PEAK** 0.50–1.40 kWh (AC + appliances)
+  - Slot 46–47 (11pm–midnight): 0.10–0.20 kWh
+  - Weekend +20% daytime, AC starts earlier (slot 28 = 2pm)
+  - `cost_sgd = kwh * 0.2911`, `carbon_kg = kwh * 0.402`
+  - **ANOMALY for household 1001** (last 21 days): slot 4–5 (2am) → +0.9 kWh above baseline
+
+- [ ] **A2.2** Create `scripts/generate_ac_data.py` — 43,200 rows correlated with SP data
+  - `is_on=True` when slot 36–47 AND SP kwh > 0.5; `temp_setting_c` = 23–26
+  - **ANOMALY for household 1001** (last 21 days): `is_on=True` at slots 4–5
+
+- [ ] **A2.3** Create `scripts/seed_clickhouse.py`
+  - **Batch 50,000 rows/batch** — never insert one row at a time (ClickHouse part explosion risk)
+
+- [ ] **A2.4** Create `scripts/compute_features.py` — insert into `energy_features`
+  - `baseline_kwh`: rolling 4-week same-slot avg
+  - `anomaly_score`: z-score = (kwh − baseline) / stddev(same slot last 28 days)
+  - **Verify**: household 1001, slot 4–5, last 21 days → anomaly_score > 3.0
+
+### Phase A3 — Real-time Ingestion Mock (1 hr)
+> **Dependency: A1 done**
+
+- [ ] **A3.1** `POST /api/ingest/ac-reading` — buffer 30 readings, flush to ClickHouse in batch
+- [ ] **A3.2** `POST /api/ingest/sp-interval` — same buffered pattern
+- [ ] **A3.3** `scripts/simulate_realtime.py` — loops through last 48 slots for household 1001, POSTs each with 0.5s delay, prints `[02:00 AM] AC: ON, 0.95 kWh ⚠️ ANOMALY`
+
+### Phase A4 — Admin / Region Analytics API (1 hr)
+> **Dependency: A2 loaded + MV created**
+
+- [ ] **A4.1** `GET /api/admin/region-summary` — Punggol 7-day totals (households, kwh, cost, carbon)
+- [ ] **A4.2** `GET /api/admin/peak-heatmap` — query `neighborhood_rollup` MV by slot_idx
+- [ ] **A4.3** `GET /api/admin/grid-contribution` — this week vs 4-week baseline, per-household breakdown
+- [ ] **A4.4** `GET /api/admin/households` — all 10 with today_kwh, today_baseline_kwh, anomaly_count
+
+---
+
+## DEVELOPER B — AI + Business Logic (5–6 hrs)
+
+### Phase B1 — FastAPI Project Setup (30 min)
+> **Run in parallel with A1 — no data dependency yet**
+
+- [ ] **B1.1** Scaffold: `app/main.py`, `app/routers/` (4 files), `app/services/` (6 stubs), `app/models/` (4 files)
+- [ ] **B1.2** `requirements.txt`: `fastapi`, `uvicorn[standard]`, `clickhouse-connect`, `openai`, `pydantic>=2`, `python-dotenv`
+- [ ] **B1.3** `.env.example`: `CLICKHOUSE_HOST`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD`, `CLICKHOUSE_DB`, `OPENAI_API_KEY`
+- [ ] **B1.4** CORS in `app/main.py`: `allow_origins=["*"]` for hackathon
+- [ ] **B1.5** Pydantic models: `InsightResponse`, `AnomalyItem`, `DeviceState`, `ACScheduleRequest`, `HabitStatus`, `RewardBalance`
+
+### Phase B2 — Anomaly Detection Service (1.5 hrs)
+> **Dependency: A2.4 done (energy_features populated)**
+
+- [ ] **B2.1** `app/services/anomaly_service.py`:
+  - `get_anomalies(household_id, days=7)` → query `energy_features` where `anomaly_score > 2.0`
+  - `get_weekly_comparison(household_id)` → this week vs last week same slots
+  - `detect_ac_night_anomaly(household_id)` → correlate `ac_readings` slots 0–7 → `{detected, slot, time_label, avg_kwh_excess, days_observed}`
+- [ ] **B2.2** `GET /api/insights/anomalies/{household_id}` — with `time_label` (e.g. `"2:00 AM"`)
+- [ ] **B2.3** `GET /api/insights/weekly-comparison/{household_id}`
+- [ ] **B2.4** `GET /api/insights/ac-pattern/{household_id}` — from `ac_readings`
+
+### Phase B3 — OpenAI Recommendation Engine (1.5 hrs)
+> **Dependency: B2 done**
+
+- [ ] **B3.1** `app/services/ai_service.py` — `generate_insight(context: dict) -> str`
+  - System prompt: Singapore HDB energy coach, max 150 words, never calculate numbers
+  - All kWh/S$/CO2 computed deterministically before calling OpenAI
+
+- [ ] **B3.2** `app/services/insight_service.py` — `build_insight_context(household_id)`:
+  - Gather anomalies + weekly comparison + AC pattern + household profile
+  - `kwh_saved = excess_kwh * 0.7`, `sgd = kwh * 0.2911`, `co2 = kwh * 0.402`
+
+- [ ] **B3.3** `GET /api/insights/{household_id}` — top 3 insights:
+  ```json
+  {
+    "id": "insight_001", "type": "ac_night_anomaly",
+    "title": "Your AC ran at 2am — 5 nights this week",
+    "plain_language": "(OpenAI 100-150 words)",
+    "evidence": {"baseline_kwh": 0.05, "actual_kwh": 0.95, "anomaly_score": 3.2, "days_observed": 5},
+    "recommendation": {"action": "Set AC auto-off at 2am", "appliance": "Air-conditioner"},
+    "projected_savings": {"kwh": 0.63, "sgd": 0.18, "co2_kg": 0.25, "per": "night"},
+    "can_automate": true
+  }
+  ```
+  - Simple in-memory cache (5 min TTL)
+
+- [ ] **B3.4** `POST /api/coach/chat` — `{"household_id": 1001, "message": "..."}` → OpenAI with household context
+
+### Phase B4 — Mock MCP / AC Device Control (1 hr)
+> **Dependency: B1 done**
+
+- [ ] **B4.1** `app/services/device_store.py` — in-memory `_states: dict[int, DeviceState]`, all 10 households initialized at startup; state changes logged to `device_actions` ClickHouse table
+- [ ] **B4.2** `POST /api/devices/ac/schedule` — validate temp 16–30°C, compute `kwh_saved = hours * 0.2`, return `{"action_id": "ACT-1001-xxx", "status": "scheduled", "projected_kwh_saved": 0.8}`
+- [ ] **B4.3** `GET /api/devices/ac/status/{household_id}` — current DeviceState
+- [ ] **B4.4** `POST /api/devices/ac/apply-recommendation` — maps insight_type → preset action
+- [ ] **B4.5** Background task (FastAPI lifespan): every 60s, check if schedule expired → set `is_on=False`
+
+### Phase B5 — Habit Tracking + Rewards (1.5 hrs)
+> **Dependency: A2 loaded, B2 working · Simplified: static thresholds, no real ledger**
+
+```python
+HABITS = {
+    "offpeak_ac":        {"threshold_kwh": 0.3, "daily_points": 20},
+    "weekly_reduction":  {"threshold_pct": 0.95, "weekly_points": 50},
+}
+STREAK_MILESTONES = {7: 100, 14: 250, 30: 500}  # days → bonus points
+VOUCHER_THRESHOLD = 500  # points → mock S$5 CDC voucher
+```
+
+- [ ] **B5.1** `app/services/habit_service.py`: `evaluate_daily_habits()`, `get_streak()`, `compute_weekly_impact()`
+- [ ] **B5.2** `GET /api/habits/{household_id}` — streak per habit, today's status, week rate
+- [ ] **B5.3** `app/services/reward_service.py`: `get_balance()` via `SUM(points_earned)`, `award_points()`, `redeem_voucher()` → mock code `CDC-1001-2026`
+- [ ] **B5.4** `POST /api/habits/evaluate/{household_id}` — evaluates + awards points (demo trigger)
+- [ ] **B5.5** `GET /api/rewards/{household_id}` — balance, points_to_next_voucher, history
+- [ ] **B5.6** `GET /api/habits/{household_id}/impact` — deterministic impact + OpenAI motivational summary
+
+---
+
+## Shared / Integration Tasks
+
+- [ ] **C1** (Before A2/B1): Finalise `app/data/households.py` — both devs import same file
+- [ ] **C2** (Before A2): Confirm slot_idx mapping: slot 0=00:00, slot 4=02:00, slot 36=18:00, slot 46=23:00
+- [ ] **C3** (After A2.4 + B2): End-to-end smoke test:
+  - `GET /api/insights/anomalies/1001` → anomaly at slot 4–5 (2am) ✓
+  - `GET /api/insights/1001` → OpenAI explains Ahmad's 2am AC pattern ✓
+  - `POST /api/devices/ac/apply-recommendation` → action scheduled ✓
+- [ ] **C4** CORS in `app/main.py` (Dev B, B1.4)
+- [ ] **C5** Verify `/docs` Swagger shows all endpoints before demo
+
+---
+
+## Demo Sequence (Backend View)
+
+| Step | API Call | What Judges See |
+|---|---|---|
+| 1 | `GET /api/admin/region-summary` | 10 Punggol households, weekly kWh total |
+| 2 | `GET /api/insights/anomalies/1001` | AC spike at 2am, anomaly_score > 3 |
+| 3 | `GET /api/insights/1001` | OpenAI: "Ahmad's AC ran at 2am for 5 nights..." |
+| 4 | `POST /api/devices/ac/apply-recommendation` | ACT-1001-xxx scheduled, 0.8 kWh projected saved |
+| 5 | `POST /api/habits/evaluate/1001` | Off-peak AC achieved, +20 points |
+| 6 | `GET /api/rewards/1001` | 340 pts, 160 to next S$5 CDC voucher |
+
+---
+
+## Priority Order
+
+```
+P0 — Core demo loop (MUST ship):
+  A1 → A2 → A3(partial) → B1 → B2 → B3 → B4
+
+P1 — Strong demo (add if P0 stable):
+  A4 (admin analytics) → B5 (habits + rewards)
+
+P2 — Nice to have:
+  B3.4 (coach chat) · B4.5 (AC simulator) · B5.6 (AI impact)
+```
+
+**Rule**: Do NOT start P1 until P0 is working end-to-end and demoed locally.
+
+---
+
+## Key Risks
+
+| Risk | Mitigation |
+|---|---|
+| ClickHouse one-row inserts → part explosion | Batch ≥50K rows in seed scripts; buffer 30 readings in app layer |
+| OpenAI latency > 3s in demo | Cache insight 5 min; call endpoint 30s before demo |
+| Household 1001 anomaly_score too low | Verify > 3.0 at slot 4–5 during A2.4; fix seed data if needed |
+| Dev B overloaded | Habits/rewards are P1 — start only after P0 loop is stable |
+| Mock MCP scope creep | In-memory dict only, 4 endpoints max, no real protocol stack |
+
+---
+
+## SP Group Data Reference
+
+| Parameter | Value |
+|---|---|
+| Electricity tariff | S$0.2911/kWh (SP Group Jan–Mar 2026) |
+| Grid emission factor | 0.402 kg CO2/kWh (EMA 2024) |
+| 4-room HDB avg monthly | 380.7 kWh (MSE/EMA 2024) |
+| Peak window | Slots 36–45 = 7pm–11pm weekdays |
+| AC power draw | 0.6–1.2 kWh/slot (NEA estimates) |
+
+---
