@@ -6,8 +6,8 @@ export default function UserLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950">
-      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
+    <div className="min-h-screen bg-[#F3F9F9] dark:bg-zinc-950">
+      <header className="sticky top-0 z-10 border-b border-[#86CCD2]/20 bg-[#F3F9F9]/95 backdrop-blur dark:border-[#86CCD2]/10 dark:bg-zinc-950/95">
         <nav className="flex items-center justify-between px-4 py-3 sm:px-6">
           <Link
             href="/user"
