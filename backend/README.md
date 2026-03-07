@@ -3357,7 +3357,7 @@ uv sync
 export CLICKHOUSE_HOST=<your-host>
 export CLICKHOUSE_USER=<your-user>
 export CLICKHOUSE_PASSWORD=<your-password>
-export CLICKHOUSE_DB=default
+export CLICKHOUSE_DB=saivers
 export OPENAI_API_KEY=<your-key>
 
 # Optional: MCP mode (default is mock)
