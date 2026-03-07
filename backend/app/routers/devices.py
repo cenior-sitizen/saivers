@@ -195,3 +195,69 @@ def turn_off_ac(household_id: int):
         raise HTTPException(status_code=404, detail=f"Household {household_id} not found")
     set_off(household_id)
     return {"status": "off", "household_id": household_id}
+
+
+# ── Daily snapshot endpoint ────────────────────────────────────────────────────
+
+@router.get("/daily-snapshot/{household_id}")
+def get_daily_snapshot(household_id: int) -> list[dict]:
+    """
+    Return today's per-device AC usage snapshot (8am fetch pattern).
+
+    Always returns 4 room entries — zeros if no data for a device today.
+    Frontend calls once on page load; no push required.
+
+    Response per device:
+      device_id, device_name, kwh_today, runtime_hours, avg_temp_c,
+      is_on_now, power_w (live from simulator if available)
+    """
+    from app.data.rooms import ROOM_MAP, ROOM_ORDER
+    sgt_today = datetime.now(SGT).date()
+    client = get_client()
+
+    result = client.query(
+        """
+        SELECT
+            device_id,
+            toFloat64(sum(kwh))                                  AS kwh_today,
+            countIf(is_on = 1) / 2.0                            AS runtime_hours,
+            toFloat64(avgIf(temp_setting_c, is_on = 1))         AS avg_temp_c,
+            argMax(is_on, ts)                                    AS is_on_now
+        FROM ac_readings
+        WHERE household_id = {hid:UInt32}
+          AND reading_date  = {today:Date}
+        GROUP BY device_id
+        """,
+        parameters={"hid": household_id, "today": str(sgt_today)},
+    )
+
+    row_map: dict[str, dict] = {}
+    for row in result.named_results():
+        row_map[row["device_id"]] = row
+
+    # Build live power from MCP client (best-effort)
+    live_power: dict[str, float] = {}
+    try:
+        from app.services.mcp_client import MCPClient, SIMULATOR_DEVICE_MAP
+        mcp = MCPClient(household_id)
+        for room_device_id in ROOM_ORDER:
+            units = mcp.get_status(room_device_id)
+            live_power[room_device_id] = sum(u.get("power_w", 0.0) for u in units)
+    except Exception:
+        pass
+
+    snapshot = []
+    for device_id in ROOM_ORDER:
+        meta = ROOM_MAP[device_id]
+        r = row_map.get(device_id, {})
+        snapshot.append({
+            "device_id": device_id,
+            "device_name": meta["room_name"] + " AC",
+            "kwh_today": round(float(r.get("kwh_today") or 0), 3),
+            "runtime_hours": round(float(r.get("runtime_hours") or 0), 1),
+            "avg_temp_c": round(float(r.get("avg_temp_c") or 0), 1),
+            "is_on_now": bool(r.get("is_on_now", False)),
+            "power_w": round(live_power.get(device_id, 0.0), 1),
+        })
+
+    return snapshot

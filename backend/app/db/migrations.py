@@ -147,6 +147,44 @@ _DDLS: list[tuple[str, str]] = [
         """,
     ),
     (
+        "weekly_recommendations",
+        """
+        CREATE TABLE IF NOT EXISTS weekly_recommendations
+        (
+            household_id  UInt32,
+            iso_week      LowCardinality(String),  -- e.g. "2026-W10"
+            rec_id        String,                   -- UUID4; primary lookup for apply
+            device_id     LowCardinality(String),   -- room-level: "ac-living-room"
+            current_temp  UInt8,
+            rec_temp      UInt8,
+            current_mode  LowCardinality(String),
+            rec_mode      LowCardinality(String),
+            reason        String,
+            ai_summary    String DEFAULT '',
+            created_at    DateTime DEFAULT now()
+        )
+        ENGINE = MergeTree
+        ORDER BY (household_id, iso_week, rec_id)
+        -- No PARTITION BY: table stays <1K rows (10 households x 52 weeks x 4 rooms)
+        """,
+    ),
+    (
+        "applied_recommendations",
+        """
+        CREATE TABLE IF NOT EXISTS applied_recommendations
+        (
+            household_id  UInt32,
+            rec_id        String,
+            action_id     String,
+            applied_at    DateTime DEFAULT now(),
+            new_temp      UInt8,
+            new_mode      LowCardinality(String)
+        )
+        ENGINE = MergeTree
+        ORDER BY (household_id, rec_id, applied_at)
+        """,
+    ),
+    (
         "neighborhood_rollup",
         """
         CREATE TABLE IF NOT EXISTS neighborhood_rollup
