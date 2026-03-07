@@ -45,7 +45,7 @@ Smart appliances provide:
 ```
 ┌─────────────────┐     ┌─────────────────────┐     ┌──────────────────────────┐
 │  Home Meter     │────▶│  SP Group Database  │────▶│  ClickHouse (Mock)       │
-│  (Half-hourly)  │     │  Raw + Processed    │     │  + Smart Appliance Data   │
+│  (Half-hourly)  │     │  Raw + Processed    │     │  + Smart Appliance Data  │
 └─────────────────┘     └─────────────────────┘     └──────────────────────────┘
                                                                   │
                                         ┌─────────────────────────┴─────────────────────────┐
@@ -64,7 +64,7 @@ Smart appliances provide:
 
 ## What We're Building (24-Hour Prototype)
 
-### 6A. Admin Dashboard (Desktop-First)
+### Admin Dashboard (Desktop-First)
 
 For **SP Group leadership** and **operations teams** — a desktop-first view to monitor, analyze, and act on energy data.
 
@@ -80,7 +80,7 @@ For **SP Group leadership** and **operations teams** — a desktop-first view to
 
 ---
 
-### 6B. User App (Mobile-First)
+### User App (Mobile-First)
 
 For **households** — a mobile-first experience that turns insights into action with minimal mental overhead.
 
@@ -90,7 +90,7 @@ For **households** — a mobile-first experience that turns insights into action
 | **Automation (with approval)** | Help users automate configurations — e.g., turn off air conditioning between 2am–4am when it fits their schedule and saves cost |
 | **Reduced Mental Overhead** | We handle the configuration logic; users approve and benefit |
 
-**Prototype scope:** 4 rooms (Master Room, Room 1, Room 2, Living Room), each with one air conditioner. Users can see their rooms and appliances, and receive AI-driven suggestions for optimization.
+**Prototype scope:** 4 rooms (Master Room, Room 1, Room 2, Living Room), each with one air conditioner. Users can view their rooms, see connected appliances, and receive AI-driven suggestions for optimization.
 
 ---
 
@@ -100,8 +100,8 @@ For **households** — a mobile-first experience that turns insights into action
 |-------|------------|
 | **Database** | ClickHouse |
 | **Backend** | Python |
-| **Frontend** | Next.js, Vercel |
-| **AI / Analytics** | LibreChat (for admin), AI-driven recommendations |
+| **Frontend** | Next.js (App Router), Tailwind CSS, deployed on Vercel |
+| **AI / Analytics** | LibreChat (admin), AI-driven nudges (user) |
 
 ---
 
@@ -109,16 +109,69 @@ For **households** — a mobile-first experience that turns insights into action
 
 ```
 saivers/
-├── frontend/     # Next.js app — Admin (desktop) + User (mobile) views
-├── backend/      # Python + ClickHouse integration
+├── frontend/                   # Next.js app
+│   ├── app/
+│   │   ├── page.tsx            # Root landing — choose Admin or User view
+│   │   ├── layout.tsx          # Root layout
+│   │   ├── globals.css
+│   │   ├── admin/              # Desktop-first Admin view
+│   │   │   ├── layout.tsx      # Admin nav (Dashboard, Settings)
+│   │   │   ├── page.tsx        # Admin dashboard (ClickHouse data)
+│   │   │   └── settings/
+│   │   │       └── page.tsx    # Admin settings subpage
+│   │   └── user/               # Mobile-first User view
+│   │       ├── layout.tsx      # User nav (Settings icon)
+│   │       ├── page.tsx        # Room list with air conditioners
+│   │       └── settings/
+│   │           └── page.tsx    # User settings subpage
+│   ├── package.json
+│   └── tsconfig.json
+├── backend/                    # Python + ClickHouse integration
 └── README.md
 ```
+
+### Frontend Routes
+
+| Route | View | Description |
+|-------|------|-------------|
+| `/` | Root | Landing page — navigate to Admin or User |
+| `/admin` | Admin | Dashboard with ClickHouse data placeholders |
+| `/admin/settings` | Admin | Settings subpage (demo) |
+| `/user` | User | Room list — 4 rooms, each with an air conditioner |
+| `/user/settings` | User | Settings subpage (demo) |
+
+> **No auth required for the prototype.** The root landing page at `/` lets anyone navigate directly to either view.
 
 ---
 
 ## Getting Started
 
-*To be updated as the prototype evolves.*
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The root page lets you navigate to the Admin or User view.
+
+### Backend
+
+```bash
+cd backend
+# setup instructions to be added
+```
+
+---
+
+## Team Notes
+
+- **No sign-in system** for this prototype. Views are separated by route, not by auth.
+- **Admin view** is desktop-first — build and test at ≥1280px viewport.
+- **User view** is mobile-first — build and test at ≤390px viewport (iPhone-size).
+- When adding new pages, follow the existing route structure: `app/admin/[feature]/page.tsx` or `app/user/[feature]/page.tsx`.
+- Backend and frontend are fully decoupled. Frontend calls the backend via API routes or direct fetch — to be wired up as the prototype progresses.
 
 ---
 
