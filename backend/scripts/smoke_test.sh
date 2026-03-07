@@ -92,6 +92,13 @@ check "GET /api/insights/ac-pattern/$HOUSEHOLD" "$S" 200
 S=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/insights/$HOUSEHOLD")
 check "GET /api/insights/$HOUSEHOLD" "$S" 200
 
+# ── Usage / Weekly Bill ───────────────────────
+echo ""
+echo "[ Weekly Bill ]"
+BODY=$(curl -s "$BASE/api/usage/weekly-bill/$HOUSEHOLD")
+S=$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(0 if len(d.get('chart_data',[])) == 7 else 1)" 2>/dev/null)
+[ "$S" = "0" ] && ok "GET /api/usage/weekly-bill/$HOUSEHOLD (7 chart entries)" || fail "GET /api/usage/weekly-bill/$HOUSEHOLD" "$BODY"
+
 # ── Summary ───────────────────────────────────
 echo ""
 echo "========================================"
