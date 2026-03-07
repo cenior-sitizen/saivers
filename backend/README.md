@@ -3597,3 +3597,176 @@ uv run python -m scripts.test_integration_flow
 # If the bell shows no insights, trigger weekly insight generation manually
 curl -X POST http://localhost:8003/api/insights/admin/run-weekly-insights
 ```
+
+---
+
+## Admin Dashboard Demo Flow
+
+The admin view (`/admin`) is a **desktop-first** view intended for the SP Group operator or hackathon judge. It exposes four surfaces, with the AI Investigation page being the centrepiece for emphasising AI capability.
+
+### Admin Setup (in addition to the user-flow setup)
+
+```bash
+# LibreChat must be running (Docker)
+cd librechat-config
+docker compose -f ../librechat/docker-compose.yml -f docker-compose.override.yml up -d
+
+# Verify ClickHouse MCP server is reachable
+curl http://localhost:8001/sse   # should open SSE stream
+```
+
+Open a **desktop browser** to `http://localhost:3000/admin`.
+
+---
+
+### Where AI Lives in the Admin View
+
+```
+Admin Dashboard (/admin)
+├── Overview        — ClickHouse live metrics: total kWh, cost, carbon (7-day)
+├── Analytics       — Peak heatmap, regional comparison, green grid CO2
+├── AI Investigation ← CENTREPIECE: LibreChat embedded, ClickHouse MCP tool
+│   └── AI agent queries live energy DB in natural language
+├── Monitoring      — Household anomaly list (anomaly_score > 2.0)
+├── Recommendations — Generated AI recs + approval status per household
+└── Settings        — Config
+```
+
+---
+
+### AI Components — Full Map
+
+| AI Component | Where | Powered by | What it does |
+|---|---|---|---|
+| Anomaly insight cards | User bell / daily | GPT-4o | Explains detected anomaly in plain English per household |
+| Weekly insight generation | Admin trigger / Saturday | GPT-4o | Compares W-1 vs W-2 kWh, writes notification title + body + AI summary |
+| Monthly narrative | Monthly report API | GPT-4o | 2-3 sentence encouraging performance summary with exact numbers |
+| AI Investigation agent | Admin `/admin/investigation` | LibreChat + Claude/GPT-4o | Natural language queries over live ClickHouse energy DB via MCP |
+| MCP device control | Approve insight/recommendation | MCP server (mock→Xiaomi) | AI agent command propagated to AC unit |
+
+---
+
+### Act 1 — Admin Overview (30 sec)
+
+**Device:** Desktop browser at `localhost:3000/admin`
+
+1. Open `/admin` — show the overview cards:
+   - Neighbourhood total kWh (last 7 days)
+   - Total cost SGD
+   - Total carbon kg
+   - Peak vs off-peak split
+2. Say: *"This is the SP Group operator view. All numbers come live from ClickHouse — Singapore's SP Group energy data at 30-minute resolution."*
+3. Click **Analytics** — show the peak heatmap (hour x day grid) and green grid contribution table
+4. Say: *"The green grid contribution shows how much CO2 each household saved by shifting usage off-peak — this is the community impact Saivers drives."*
+
+---
+
+### Act 2 — AI Investigation with LibreChat (90 sec) — CENTREPIECE
+
+5. Click **AI Investigation** in the sidebar
+6. The page embeds LibreChat (running at `localhost:3080`)
+7. Show the LibreChat interface — it has access to the live ClickHouse database via MCP
+
+**Demo query 1 — anomaly investigation:**
+```
+Type in LibreChat:
+"Which household in Punggol had the highest energy usage this week
+ and what time of day was their peak consumption?"
+```
+The AI agent calls the ClickHouse MCP tool, runs a SQL query, and returns a natural language answer with real numbers.
+
+**Demo query 2 — green grid impact:**
+```
+"How much CO2 has our neighbourhood saved compared to baseline
+ over the last 7 days?"
+```
+The agent queries `neighborhood_rollup` and `sp_energy_intervals`, interprets the data, and gives an AI-written summary.
+
+**Demo query 3 — recommendation ROI:**
+```
+"How many households followed the AI recommendations this week
+ and what was the average energy reduction?"
+```
+
+8. Say: *"This is the AI agent powered by LibreChat with MCP — the Model Context Protocol gives it direct tool access to our ClickHouse energy database. It can answer any question about the neighbourhood without us pre-coding every query."*
+9. Say: *"The same MCP protocol is how we talk to Xiaomi smart home devices — the AI is the intelligence layer between the data and the physical world."*
+
+---
+
+### Act 3 — Monitoring and Anomaly Detection (30 sec)
+
+10. Click **Monitoring** — show the household anomaly list
+    - Each card: household name, today kWh vs baseline, anomaly count
+    - Ahmad (1001) should show anomaly_count > 0 (from W10 seed data)
+11. Say: *"Our anomaly detection runs on every 30-minute interval. We compute a z-score against a rolling 4-week baseline for each slot — anything above 2.0 standard deviations triggers an AI insight."*
+12. Say: *"The AI doesn't just flag numbers — it uses GPT-4o to write a personalised explanation that tells Ahmad exactly what happened and what to do."*
+
+---
+
+### Act 4 — Recommendations Dashboard (30 sec)
+
+13. Click **Recommendations** — show the weekly AI recommendation list
+    - Generated each Saturday by GPT-4o
+    - Shows current temp, recommended temp, reason, applied status
+14. Say: *"Every Saturday, our AI analyses the previous week's usage, compares it to the week before, and generates personalised AC recommendations. When the user approves on their phone, it goes through MCP to the device."*
+
+---
+
+### Admin + User Flow — Combined Presentation Order
+
+For a full end-to-end demo (4-5 min total), run in this order:
+
+| Min | View | What happens |
+|---|---|---|
+| 0:00 | Admin Overview | Show live ClickHouse data, neighbourhood total |
+| 0:30 | Admin AI Investigation | LibreChat MCP query — "which household had highest usage?" |
+| 1:30 | Admin Monitoring | Anomaly list — Ahmad flagged |
+| 2:00 | User View (Ahmad) | Switch to mobile, show bell badge, tap insight |
+| 2:30 | User Bell → Approve | AI insight → approve → MCP commands AC |
+| 3:00 | User Rewards | Habit streak + CDC voucher progress |
+| 3:30 | Admin Monthly Report | Call API, show AI narrative + 45% reduction |
+| 4:00 | Wrap | Flywheel pitch: detect → explain → act → reward → report |
+
+---
+
+### Key Talking Points About AI (for judges)
+
+1. **GPT-4o is not a chatbot wrapper** — every AI call receives pre-computed ClickHouse metrics. GPT-4o only writes the explanation. Numbers are never hallucinated.
+
+2. **MCP is the AI-to-device bridge** — Model Context Protocol (same standard used by Claude) lets the AI agent issue commands to Xiaomi smart home devices. In the demo we use a mock server; in production this is a real Xiaomi MiOT MCP server.
+
+3. **LibreChat agent has live DB access** — the admin investigation page isn't a static report. The AI agent writes and executes real SQL against ClickHouse at query time.
+
+4. **Three AI cadences, one coherent product**:
+   - Daily: AI explains anomalies (GPT-4o via insights endpoint)
+   - Weekly: AI generates recommendations + notifications (GPT-4o + ClickHouse comparison)
+   - Monthly: AI writes performance narrative (GPT-4o with full month metrics)
+
+---
+
+### LibreChat Suggested Demo Queries (copy-paste ready)
+
+```
+1. "Show me which household in the neighbourhood used the most energy this week and compare it to their 4-week average."
+
+2. "What percentage of households followed the AI recommendations last week and how much energy did they collectively save?"
+
+3. "Which time slots had the highest peak demand yesterday? What would the CO2 saving be if households shifted 20% of that to off-peak?"
+
+4. "Ahmad's household (ID 1001) — summarise their energy behaviour this month and flag any anomalies."
+```
+
+---
+
+### Admin API Endpoints Reference
+
+| Endpoint | Data source | Demo value |
+|---|---|---|
+| `GET /api/admin/region-summary` | sp_energy_intervals (7d) | Total kWh, cost, carbon, peak/offpeak split |
+| `GET /api/admin/peak-heatmap` | neighborhood_rollup MV | 7-day × 48-slot heatmap (AggregatingMergeTree) |
+| `GET /api/admin/grid-contribution` | sp_energy_intervals vs baseline | Per-household CO2 reduction vs 4-week baseline |
+| `GET /api/admin/households` | energy_features JOIN intervals | Anomaly count per household today |
+| `GET /api/insights/{hid}` | GPT-4o + ClickHouse | AI-written anomaly insight cards |
+| `GET /api/insights/weekly/{hid}` | GPT-4o + weekly comparison | Weekly AI insight for notification bell |
+| `POST /api/insights/admin/run-weekly-insights` | Triggers GPT-4o generation | Regenerate all weekly insights for demo |
+| `GET /api/reports/monthly/{hid}` | GPT-4o + full month metrics | Complete AI narrative performance report |
