@@ -1,10 +1,16 @@
 """
-Generate 43,200 AC appliance sensor rows correlated with SP data.
+Generate AC appliance sensor rows matched to household personas.
 
 10 households x 90 days x 48 slots/day = 43,200 rows
 
-is_on = True when slot 36-47 AND sp_kwh > 0.5
-ANOMALY for household 1001, last 21 days: is_on=True at slots 4-5
+Demo personas:
+  1001 Ahmad   — Waster:   AC on 6pm–5am at 20°C  (aggressive overnight cooling)
+  1002 Priya   — Moderate: AC on 6pm–midnight at 24°C  (reasonable but no auto-off)
+  1003 Wei Ming — Champion: AC on 6pm–10pm at 26°C  (responsible, off before bed)
+  1004-1010    — Default:   AC on 6pm–midnight at 24°C  (same as Moderate)
+
+Power formula (from AC simulator): base_w = (30 - temp_c) * 50 + 400
+  20°C → ~900W  |  24°C → ~700W  |  26°C → ~600W
 """
 
 import random
@@ -13,16 +19,41 @@ from datetime import datetime, timedelta, timezone
 from app.data.households import DEVICE_ID, HOUSEHOLDS
 
 _SGT = timezone(timedelta(hours=8))
-_ANOMALY_HOUSEHOLD = 1001
-_ANOMALY_SLOTS = {4, 5}
-_AC_ON_SLOTS = set(range(36, 48))
+
+# Persona AC profiles: which slots the AC is on, and at what temperature
+_PERSONA_AC: dict[int, dict] = {
+    1001: {
+        # Waster: 6pm–midnight (slots 36-47) + midnight–4:30am (slots 0-9) = all night
+        "on_slots": set(range(36, 48)) | set(range(0, 10)),
+        "temp_c": 20,
+    },
+    1002: {
+        # Moderate: 6pm–midnight only (slots 36-47)
+        "on_slots": set(range(36, 48)),
+        "temp_c": 24,
+    },
+    1003: {
+        # Champion: 6pm–10pm only (slots 36-43), off before bed
+        "on_slots": set(range(36, 44)),
+        "temp_c": 26,
+    },
+}
+_DEFAULT_AC = {
+    "on_slots": set(range(36, 48)),
+    "temp_c": 24,
+}
+
+
+def _power_kwh(temp_c: int) -> tuple[float, float]:
+    """Compute realistic power draw and kWh for a 30-min slot at given temperature."""
+    base_w = (30 - temp_c) * 50 + 400
+    power_w = round(base_w * random.uniform(0.95, 1.05), 1)
+    kwh = round(power_w / 1000 * 0.5, 3)  # 30-min slot
+    return power_w, kwh
 
 
 def generate_ac_data(sp_rows: list[dict]) -> list[dict]:
     random.seed(43)
-    sp_lookup: dict[tuple, float] = {
-        (r["household_id"], r["ts"]): float(r["kwh"]) for r in sp_rows
-    }
 
     today = datetime.now(_SGT).replace(hour=0, minute=0, second=0, microsecond=0)
     start_date = today - timedelta(days=89)
@@ -30,21 +61,24 @@ def generate_ac_data(sp_rows: list[dict]) -> list[dict]:
     rows: list[dict] = []
     for household in HOUSEHOLDS:
         hid = household["household_id"]
+        profile = _PERSONA_AC.get(hid, _DEFAULT_AC)
+        on_slots = profile["on_slots"]
+        temp_c = profile["temp_c"]
+
         for day_offset in range(90):
             day = start_date + timedelta(days=day_offset)
-            is_anomaly_period = day_offset >= 69
             for slot in range(48):
                 hours, mins = divmod(slot * 30, 60)
                 ts = day.replace(hour=hours, minute=mins)
-                sp_kwh = sp_lookup.get((hid, ts), 0.0)
+                is_on = slot in on_slots
 
-                normal_on = slot in _AC_ON_SLOTS and sp_kwh > 0.5
-                anomaly_on = is_anomaly_period and hid == _ANOMALY_HOUSEHOLD and slot in _ANOMALY_SLOTS
-                is_on = normal_on or anomaly_on
-
-                temp_setting_c = random.randint(23, 26) if is_on else 0
-                power_w = round(sp_kwh * 2000, 1) if is_on else 0.0
-                kwh_val = round(sp_kwh * 0.75, 3) if is_on else 0.0
+                if is_on:
+                    power_w, kwh_val = _power_kwh(temp_c)
+                    t = temp_c + random.randint(-1, 1)  # ±1°C variation
+                else:
+                    power_w = 0.0
+                    kwh_val = 0.0
+                    t = 0
 
                 rows.append(
                     {
@@ -53,7 +87,7 @@ def generate_ac_data(sp_rows: list[dict]) -> list[dict]:
                         "ts": ts,
                         "power_w": power_w,
                         "kwh": kwh_val,
-                        "temp_setting_c": temp_setting_c,
+                        "temp_setting_c": t,
                         "is_on": is_on,
                         "mode": "cool",
                     }
@@ -67,5 +101,8 @@ if __name__ == "__main__":
     sp_rows = generate_sp_data()
     ac_rows = generate_ac_data(sp_rows)
     print(f"Generated {len(ac_rows):,} AC reading rows")
-    anomaly_rows = [r for r in ac_rows if r["household_id"] == 1001 and r["is_on"] and r["ts"].hour < 4]
-    print(f"Anomaly rows (hh=1001, is_on, hour<4): {len(anomaly_rows)}")
+
+    for hid, label in [(1001, "Waster"), (1002, "Moderate"), (1003, "Champion")]:
+        night_on = [r for r in ac_rows if r["household_id"] == hid and r["is_on"] and r["ts"].hour < 5]
+        week_on = [r for r in ac_rows if r["household_id"] == hid and r["is_on"]]
+        print(f"  {hid} ({label}): {len(night_on)} night slots ON, {len(week_on)} total ON slots")

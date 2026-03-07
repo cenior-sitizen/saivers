@@ -1,4 +1,4 @@
-"""WattCoach FastAPI application."""
+"""Saivers FastAPI application."""
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="WattCoach API",
+    title="Saivers API",
     description="AI-powered energy behaviour coach — HackOMania 2026",
     version="1.0.0",
     lifespan=lifespan,
@@ -40,15 +40,18 @@ app.add_middleware(
 )
 
 # Routers
-from app.routers import insights, devices, habits, admin  # noqa: E402
-from app.routers import ingest, usage  # noqa: E402
+from app.routers import insights, devices, habits, admin, aircon, ingest, usage, weekly_insights, recommendations, reports  # noqa: E402
 
-app.include_router(insights.router, prefix="/api/insights", tags=["insights"])
-app.include_router(devices.router,  prefix="/api/devices",  tags=["devices"])
-app.include_router(habits.router,   prefix="/api/habits",   tags=["habits"])
-app.include_router(admin.router,    prefix="/api/admin",    tags=["admin"])
-app.include_router(ingest.router,   prefix="/api/ingest",   tags=["ingest"])
-app.include_router(usage.router,    prefix="/api/usage",    tags=["usage"])
+app.include_router(insights.router,        prefix="/api/insights",        tags=["insights"])
+app.include_router(weekly_insights.router, prefix="/api/insights",        tags=["weekly-insights"])
+app.include_router(devices.router,         prefix="/api/devices",         tags=["devices"])
+app.include_router(aircon.router,          prefix="/api/aircon",          tags=["aircon"])
+app.include_router(habits.router,          prefix="/api/habits",          tags=["habits"])
+app.include_router(admin.router,           prefix="/api/admin",           tags=["admin"])
+app.include_router(ingest.router,          prefix="/api/ingest",          tags=["ingest"])
+app.include_router(usage.router,           prefix="/api/usage",           tags=["usage"])
+app.include_router(recommendations.router, prefix="/api/recommendations", tags=["recommendations"])
+app.include_router(reports.router,         prefix="/api/reports",         tags=["reports"])
 
 
 @app.get("/health", tags=["health"])

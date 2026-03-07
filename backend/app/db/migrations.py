@@ -117,7 +117,7 @@ _DDLS: list[tuple[str, str]] = [
         (
             household_id  UInt32,
             reward_type   LowCardinality(String),
-            points_earned UInt32,
+            points_earned Int32,   -- signed: negative for voucher redemptions
             reason        String,
             voucher_label String   DEFAULT '',
             created_at    DateTime DEFAULT now()
@@ -147,6 +147,44 @@ _DDLS: list[tuple[str, str]] = [
         """,
     ),
     (
+        "weekly_recommendations",
+        """
+        CREATE TABLE IF NOT EXISTS weekly_recommendations
+        (
+            household_id  UInt32,
+            iso_week      LowCardinality(String),  -- e.g. "2026-W10"
+            rec_id        String,                   -- UUID4; primary lookup for apply
+            device_id     LowCardinality(String),   -- room-level: "ac-living-room"
+            current_temp  UInt8,
+            rec_temp      UInt8,
+            current_mode  LowCardinality(String),
+            rec_mode      LowCardinality(String),
+            reason        String,
+            ai_summary    String DEFAULT '',
+            created_at    DateTime DEFAULT now()
+        )
+        ENGINE = MergeTree
+        ORDER BY (household_id, iso_week, rec_id)
+        -- No PARTITION BY: table stays <1K rows (10 households x 52 weeks x 4 rooms)
+        """,
+    ),
+    (
+        "applied_recommendations",
+        """
+        CREATE TABLE IF NOT EXISTS applied_recommendations
+        (
+            household_id  UInt32,
+            rec_id        String,
+            action_id     String,
+            applied_at    DateTime DEFAULT now(),
+            new_temp      UInt8,
+            new_mode      LowCardinality(String)
+        )
+        ENGINE = MergeTree
+        ORDER BY (household_id, rec_id, applied_at)
+        """,
+    ),
+    (
         "neighborhood_rollup",
         """
         CREATE TABLE IF NOT EXISTS neighborhood_rollup
@@ -160,6 +198,37 @@ _DDLS: list[tuple[str, str]] = [
         ENGINE = AggregatingMergeTree
         PARTITION BY toYYYYMM(interval_date)
         ORDER BY (neighborhood_id, interval_date, slot_idx)
+        """,
+    ),
+    (
+        "weekly_insights",
+        """
+        CREATE TABLE IF NOT EXISTS weekly_insights
+        (
+            insight_id          String,
+            household_id        UInt32,
+            week_start          Date,
+            generated_at        DateTime('Asia/Singapore'),
+            signal_type         LowCardinality(String),
+            ac_night_anomaly    Bool           DEFAULT 0,
+            nights_observed     UInt8          DEFAULT 0,
+            weekly_increase     Bool           DEFAULT 0,
+            this_week_kwh       Decimal(8,3),
+            last_week_kwh       Decimal(8,3),
+            change_pct          Float32,
+            weekly_cost_sgd     Decimal(8,4),
+            weekly_carbon_kg    Decimal(8,4),
+            ai_summary          String,
+            recommendation_type LowCardinality(String)  DEFAULT '',
+            recommendation_json String                  DEFAULT '{}',
+            notification_title  String,
+            notification_body   String,
+            status              LowCardinality(String)  DEFAULT 'unread',
+            updated_at          DateTime('Asia/Singapore') DEFAULT now()
+        )
+        ENGINE = ReplacingMergeTree(updated_at)
+        PARTITION BY toYYYYMM(week_start)
+        ORDER BY (household_id, week_start, insight_id)
         """,
     ),
     (

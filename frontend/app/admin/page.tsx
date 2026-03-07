@@ -105,7 +105,7 @@ export default function AdminPage() {
 
       {error && (
         <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-          {error}. Ensure the WattCoach backend is running on port 8000.
+          {error}. Ensure the Saivers backend is running on port 8000.
         </div>
       )}
 

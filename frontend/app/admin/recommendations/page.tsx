@@ -109,7 +109,7 @@ export default function RecommendationsPage() {
               No recommendations available
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              Ensure the WattCoach backend is running and ClickHouse has data
+              Ensure the Saivers backend is running and ClickHouse has data
             </p>
           </div>
         )}

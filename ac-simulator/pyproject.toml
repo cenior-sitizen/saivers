@@ -1,7 +1,7 @@
 [project]
 name = "ac-simulator"
 version = "1.0.0"
-description = "Mock smart AC appliance server for WattCoach"
+description = "Mock smart AC appliance server for Saivers"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
