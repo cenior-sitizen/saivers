@@ -2,3 +2,9 @@
 .ccb/
 .claude/
 skills-lock.json
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store

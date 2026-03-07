@@ -1,6 +1,4 @@
-"""Shared household profiles for Punggol demo (10 households)."""
-
-HOUSEHOLDS = [
+HOUSEHOLDS: list[dict] = [
     {"household_id": 1001, "name": "Ahmad",    "flat_type": "4-room HDB", "neighborhood_id": "punggol", "block": "Blk 601 Punggol Drive"},
     {"household_id": 1002, "name": "Priya",    "flat_type": "4-room HDB", "neighborhood_id": "punggol", "block": "Blk 612 Punggol Way"},
     {"household_id": 1003, "name": "Wei Ming", "flat_type": "5-room HDB", "neighborhood_id": "punggol", "block": "Blk 623 Punggol Central"},
@@ -13,4 +11,7 @@ HOUSEHOLDS = [
     {"household_id": 1010, "name": "Chandra",  "flat_type": "Condo",      "neighborhood_id": "punggol", "block": "Waterway Terraces I"},
 ]
 
+NEIGHBORHOOD_ID = "punggol"
+DEVICE_ID = "ac-living-room"
+HOUSEHOLD_IDS = [h["household_id"] for h in HOUSEHOLDS]
 HOUSEHOLD_MAP: dict[int, dict] = {h["household_id"]: h for h in HOUSEHOLDS}
