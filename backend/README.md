@@ -3770,3 +3770,266 @@ For a full end-to-end demo (4-5 min total), run in this order:
 | `GET /api/insights/weekly/{hid}` | GPT-4o + weekly comparison | Weekly AI insight for notification bell |
 | `POST /api/insights/admin/run-weekly-insights` | Triggers GPT-4o generation | Regenerate all weekly insights for demo |
 | `GET /api/reports/monthly/{hid}` | GPT-4o + full month metrics | Complete AI narrative performance report |
+
+---
+
+## Complete Final Demo Script (4 min 30 sec)
+
+This is the authoritative end-to-end demo script. Follow this exactly on presentation day.
+
+### Roles
+
+| Person | Device | Responsibility |
+|---|---|---|
+| Person A | Laptop, desktop browser | Admin view, LibreChat queries |
+| Person B | Phone or narrow browser | User/mobile view |
+| Person C | Speaking | Narration |
+
+---
+
+### Pre-Show Checklist
+
+```bash
+# Terminal 1 — backend
+cd backend && uv run uvicorn app.main:app --reload --port 8003
+
+# Terminal 2 — frontend
+cd frontend && npm run dev
+
+# Terminal 3 — LibreChat (Docker)
+cd librechat-config
+docker compose -f ../librechat/docker-compose.yml -f docker-compose.override.yml up -d
+
+# Terminal 4 — seed and verify
+cd backend
+uv run python -m scripts.seed_anomaly_cases
+uv run python -m scripts.seed_success_week
+uv run python -m scripts.test_integration_flow   # must show all green PASS
+
+# Trigger weekly AI insights (so bell badge is populated)
+curl -X POST http://localhost:8003/api/insights/admin/run-weekly-insights
+```
+
+**Browser tabs to have open before walking on stage:**
+- Tab 1: `http://localhost:3000` (landing page)
+- Tab 2: `http://localhost:3000/admin/investigation` (LibreChat embedded)
+- Tab 3: `http://localhost:3000/user` (Ahmad's mobile view — narrow window or phone)
+
+---
+
+### Opening Line (10 sec)
+
+> "Every HDB household in Singapore pays for electricity they don't need — mostly from air-conditioners left on overnight or set too cold. Saivers uses AI to detect that waste, explain it to the homeowner in plain English, and let them fix it with one tap."
+
+---
+
+### Act 1 — The Problem Exists at Scale (Admin Overview, 60 sec)
+
+**Screen:** `localhost:3000` → tap Admin View → `/admin`
+
+Point at the overview cards:
+- Neighbourhood total kWh, S$ cost, kg CO2 — last 7 days
+- Say: *"This is the SP Group operator view. Real 30-minute interval data from ClickHouse — the same format SP Group uses for billing."*
+
+Navigate to `/admin/analytics`:
+- Point at the peak heatmap (7 days × 48 half-hour slots, colour = kWh intensity)
+- Say: *"The red band at 11pm–2am is AC left on overnight. That's the waste pattern we target."*
+- Point at the green grid contribution table
+- Say: *"Every household that shifts usage off-peak contributes to Singapore's grid stability. Saivers quantifies that in CO2 kg — this is the green grid story from the problem statement."*
+
+---
+
+### Act 2 — AI Investigates Live Data (Admin Investigation, 90 sec) ← AI CENTREPIECE
+
+**Screen:** `/admin/investigation` (LibreChat embedded in admin panel)
+
+Say: *"This is our AI investigation agent. It has direct access to the live ClickHouse energy database via MCP — the Model Context Protocol. Watch it answer a question that would normally need a data analyst."*
+
+**Type Query 1 in LibreChat:**
+```
+Which household in our neighbourhood had the highest energy usage
+this week, and what time of day was their peak consumption?
+```
+Wait for the AI response — it queries ClickHouse and returns real numbers.
+
+Say: *"The AI wrote and ran that SQL query itself. No pre-coded report."*
+
+**Type Query 2:**
+```
+Ahmad's household used significantly more energy this week than last week.
+What's the likely cause based on the AC usage data, and how much could
+he save per month by following our recommendation?
+```
+Wait for response. The agent cross-references AC readings with energy intervals.
+
+Say: *"This is GPT-4o with MCP tooling. It queries multiple ClickHouse tables, correlates AC behaviour with energy spend, and writes the explanation in plain English. The AI is the intelligence layer between raw data and human action."*
+
+---
+
+### Act 3 — AI Alerts the Homeowner (User Mobile View, 60 sec)
+
+**Switch to phone / narrow browser at `localhost:3000/user`**
+Default persona: **Ahmad — "The Waster"** (household 1001)
+
+Point at:
+- Weekly bar chart — spike on Mar 8
+- Living Room card: **+134% vs last week**
+- Master Bedroom card: **+54% vs last week**
+
+Say: *"This is what Ahmad sees at 8am. Our system fetched SP Group data overnight, ran anomaly detection, and the AI has already prepared an explanation for him."*
+
+Point at the **red badge on the notification bell** in the header.
+
+Say: *"The bell has an unread AI insight. Ahmad didn't need to go looking — the AI found the problem and came to him."*
+
+**Tap the bell → AI Insights dropdown opens**
+
+The card shows:
+- Title: AI-generated alert headline
+- Body: plain-English explanation with exact kWh figures
+- AI summary (italic): GPT-4o narrative of what likely happened
+- Two action buttons: **Approve** and **Dismiss**
+
+Say: *"GPT-4o wrote this notification. It knows Ahmad's flat type, his neighbourhood, his usage history. It's not a generic alert — it's a personalised energy coach."*
+
+---
+
+### Act 4 — One Tap Fixes It (MCP Device Control, 30 sec)
+
+**Tap Approve**
+
+Watch:
+- Card status flips to **Approved** (green badge)
+- Bell badge clears to zero
+- Confirmation message: e.g. "AC scheduled: 22:00–02:00 at 25°C"
+
+Say: *"That one tap triggered the full AI-to-device chain. The approval went to our backend, which used MCP — Model Context Protocol — to command Ahmad's Xiaomi smart AC units. In the demo we use a mock server; in production this calls the real Xiaomi MiOT MCP endpoint."*
+
+Say: *"The same MCP standard that lets AI models talk to developer tools now lets them talk to smart home appliances. The AI doesn't just show you a problem — it fixes it."*
+
+---
+
+### Act 5 — Behaviour Change is Rewarded (Rewards View, 45 sec)
+
+**Tap Rewards in the bottom navigation**
+
+Show:
+- Radial arc progress bar: **480 / 500 pts** (96% full)
+- Streak badge: **7 days**
+- Transaction history: 7 rows of "+20 pts — Off-peak AC daily"
+- S$5 CDC Voucher — almost ready to redeem
+
+Say: *"Every day Ahmad follows the AI recommendation, he earns 20 points automatically. A 7-day streak adds a 100-point bonus. 500 points unlocks a real S$5 CDC voucher — redeemable at NTUC, Sheng Siong, anywhere CDC vouchers are accepted."*
+
+Say: *"We chose CDC vouchers specifically because they're a real Singapore government incentive. SP Group can issue these as part of an energy savings programme. The gamification loop keeps users engaged beyond the first week."*
+
+---
+
+### Act 6 — One Month Later: The Outcome (60 sec)
+
+**Switch persona to Wei Ming using HouseholdSwitcher (top-left of header)**
+Wei Ming — "The Champion" (1003): evenings at 26°C, −12% usage
+
+Show Wei Ming's rewards screen — higher balance, possible redeemed vouchers.
+
+Say: *"Wei Ming followed AI recommendations from day one. Here's what one month looks like."*
+
+**Open in new browser tab:**
+```
+http://localhost:8003/api/reports/monthly/1001?year=2026&month=3
+```
+
+Call out the key numbers:
+- Energy: **510 kWh** this month vs **931 kWh** last month → **−45.2%**
+- Cost saved: **S$122**
+- Carbon reduced: **94 kg CO2**
+- Neighbourhood rank: **top 30th percentile** (was worst in area)
+- Habits achieved: **7-day streak**
+- Read the `ai_narrative` field aloud — GPT-4o wrote it from real data
+
+Say: *"That paragraph was written by GPT-4o in real time, from Ahmad's actual ClickHouse data. No template. It knows his numbers, his habits, his neighbourhood rank, and it wrote an encouraging summary to keep him going."*
+
+---
+
+### Closing Line (15 sec)
+
+> "Saivers closes the loop that no energy app has closed before: AI detects waste in real data, explains it in human language, commands the device to fix it via MCP, and rewards the behaviour change with real money. Daily, weekly, monthly — the flywheel keeps turning."
+
+---
+
+### Timed Run Order
+
+| Time | Screen | Action |
+|---|---|---|
+| 0:00 | Landing `localhost:3000` | Tap Admin View |
+| 0:10 | Admin Overview `/admin` | ClickHouse live metrics, carbon cards |
+| 0:40 | Admin Analytics | Peak heatmap + green grid table |
+| 1:00 | Admin Investigation | LibreChat Query 1 — highest usage household |
+| 1:45 | Admin Investigation | LibreChat Query 2 — Ahmad AC analysis |
+| 2:30 | User Home `/user` | Ahmad, bar chart spike, bell badge |
+| 2:50 | Bell dropdown | AI insight card — read title + body |
+| 3:10 | Tap Approve | MCP device control, green badge |
+| 3:20 | Rewards tab | Radial arc, streak, CDC voucher |
+| 3:45 | Switch to Wei Ming | HouseholdSwitcher — champion profile |
+| 3:55 | Monthly report API | Call in browser, read AI narrative |
+| 4:20 | Closing | Flywheel pitch |
+| 4:30 | Done | Hand to Q&A |
+
+---
+
+### Q&A Cheat Sheet
+
+| Question | Answer |
+|---|---|
+| "Is the data real?" | Yes — ClickHouse Cloud, SP Group 30-min interval format, Singapore grid factor 0.402 kg CO2/kWh |
+| "How does MCP work?" | Model Context Protocol: same standard used by Claude. Our MCP server translates AI commands to Xiaomi MiOT device API calls |
+| "Why not rule-based alerts?" | GPT-4o personalises the explanation per household — flat type, name, usage history. Rules can't write empathetic messages |
+| "Can it scale?" | Yes — ClickHouse handles billions of rows. neighborhood_rollup MV aggregates the whole region in one query |
+| "What if user dismisses?" | Dismissal is recorded. Next week's AI insight is generated fresh — the AI doesn't repeat a dismissed recommendation immediately |
+| "How is the CDC voucher issued?" | `POST /api/habits/rewards/redeem/{household_id}` — integrates with SP Group CDC voucher API |
+| "Which AI model?" | GPT-4o for all insight/narrative generation. LibreChat agent uses GPT-4o or Claude depending on config |
+
+---
+
+### Persona Switcher Reference
+
+| Persona | Household ID | Profile | Bell | Rewards | Demo use |
+|---|---|---|---|---|---|
+| Ahmad | 1001 | "The Waster" — AC midnight–5am at 20°C | Red badge (unread) | 480/500 pts | Main demo persona |
+| Priya | 1002 | "The Moderate" — evenings at 24°C, +5% | Mild insight | Partial streak | Q&A — moderate user |
+| Wei Ming | 1003 | "The Champion" — evenings at 26°C, −12% | No badge | High balance | Q&A — best case outcome |
+
+---
+
+### LibreChat Query Bank (copy-paste for demo)
+
+```
+Query 1 — Anomaly investigation:
+"Which household in our neighbourhood had the highest energy usage
+this week, and what time of day was their peak consumption?"
+
+Query 2 — Root cause analysis:
+"Ahmad's household used significantly more energy this week than last week.
+What's the likely cause based on the AC usage data, and how much could
+he save per month by following our recommendation?"
+
+Query 3 — Community impact:
+"How much CO2 has our neighbourhood saved compared to baseline
+over the last 7 days?"
+
+Query 4 — Recommendation ROI:
+"How many households followed the AI recommendations this week
+and what was the average energy reduction?"
+```
+
+---
+
+### Demo Reset (if something breaks on stage)
+
+```bash
+cd backend
+uv run python -m scripts.seed_anomaly_cases
+uv run python -m scripts.seed_success_week
+curl -X POST http://localhost:8003/api/insights/admin/run-weekly-insights
+uv run python -m scripts.test_integration_flow
+```
