@@ -32,7 +32,7 @@ export function InfoButton({ message = INFO_MESSAGE, className = "" }: InfoButto
           e.stopPropagation();
           setShow((s) => !s);
         }}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#86CCD2] hover:bg-[#86CCD2]/20 hover:text-[#007B8A] dark:text-[#86CCD2]/80 dark:hover:bg-[#86CCD2]/10 dark:hover:text-[#86CCD2]"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#86CCD2] hover:bg-[#86CCD2]/20 hover:text-[#007B8A]"
         aria-label="More information"
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,9 +45,9 @@ export function InfoButton({ message = INFO_MESSAGE, className = "" }: InfoButto
         </svg>
       </button>
       {show && (
-        <div className="absolute right-0 top-8 z-50 min-w-[200px] max-w-[260px] rounded-xl border border-[#86CCD2]/30 bg-white p-3 text-xs text-zinc-600 shadow-lg dark:border-[#86CCD2]/20 dark:bg-zinc-800 dark:text-zinc-300">
+        <div className="absolute right-0 top-8 z-50 min-w-[200px] max-w-[260px] rounded-xl border border-[#86CCD2]/30 bg-white p-3 text-xs text-[#4d6b70] shadow-lg">
           {message}
-          <div className="absolute -top-1.5 right-3 h-2 w-2 rotate-45 border-l border-t border-[#86CCD2]/30 bg-white dark:border-[#86CCD2]/20 dark:bg-zinc-800" />
+          <div className="absolute -top-1.5 right-3 h-2 w-2 rotate-45 border-l border-t border-[#86CCD2]/30 bg-white" />
         </div>
       )}
     </div>

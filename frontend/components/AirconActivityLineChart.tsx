@@ -75,9 +75,9 @@ export function AirconActivityLineChart({
     : "";
 
   return (
-    <div className="rounded-2xl border border-[#86CCD2]/30 bg-white p-5 shadow-sm dark:border-[#86CCD2]/20 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-[#86CCD2]/30 bg-white p-5 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+        <h3 className="text-sm font-semibold text-[#10363b]">
           {title}
         </h3>
         {showDayControls && (
@@ -90,7 +90,7 @@ export function AirconActivityLineChart({
                 className="absolute inset-0 cursor-pointer opacity-0"
                 aria-label="Select date"
               />
-              <span className="inline-flex cursor-pointer items-center rounded-lg border border-[#86CCD2]/40 bg-white px-3 py-2 text-xs font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800 dark:border-[#86CCD2]/30">
+              <span className="inline-flex cursor-pointer items-center rounded-lg border border-[#86CCD2]/40 bg-white px-3 py-2 text-xs font-medium text-[#10363b] shadow-sm hover:bg-[#86CCD2]/5">
                 {dateLabel || "Select date"}
               </span>
             </label>
@@ -99,7 +99,7 @@ export function AirconActivityLineChart({
               onChange={(e) =>
                 onDaySubGranularityChange?.(e.target.value as DaySubGranularity)
               }
-              className="rounded-lg border border-[#86CCD2]/40 bg-white px-3 py-2 text-xs font-medium text-zinc-900 shadow-sm focus:border-[#86CCD2] focus:outline-none focus:ring-1 focus:ring-[#86CCD2] dark:bg-zinc-900 dark:text-zinc-50 dark:border-[#86CCD2]/30"
+              className="rounded-lg border border-[#86CCD2]/40 bg-white px-3 py-2 text-xs font-medium text-[#10363b] shadow-sm focus:border-[#86CCD2] focus:outline-none focus:ring-1 focus:ring-[#86CCD2]"
               aria-label="View by hours or 30 minutes"
             >
               {DAY_SUB_OPTIONS.map((opt) => (
@@ -113,62 +113,62 @@ export function AirconActivityLineChart({
       </div>
       <div className="h-[220px] w-full">
         {data.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-[#666666] dark:text-zinc-400">
+          <div className="flex h-full items-center justify-center text-sm text-[#6f8c91]">
             {emptyMessage}
           </div>
         ) : (
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={chartData}
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#86CCD2"
-              strokeOpacity={0.2}
-              vertical={false}
-            />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 11, fill: "#666666" }}
-              axisLine={{ stroke: "#86CCD2", strokeOpacity: 0.3 }}
-              tickLine={false}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#666666" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => `${v}`}
-              domain={[0, "auto"]}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#F3F9F9",
-                border: "1px solid #86CCD2",
-                borderRadius: "12px",
-                fontSize: "12px",
-              }}
-              formatter={(value, _name, props) => [
-                `${Number(value ?? 0).toFixed(3)} kWh`,
-                (props?.payload as { status?: string })?.status ?? "",
-              ]}
-              labelFormatter={(label) => `Time: ${label}`}
-            />
-            <Line
-              type="monotone"
-              dataKey="kwh"
-              stroke="#86CCD2"
-              strokeWidth={2}
-              dot={{ fill: "#86CCD2", strokeWidth: 0, r: 3 }}
-              activeDot={{ r: 5, fill: "#86CCD2", stroke: "#F3F9F9" }}
-              connectNulls
-            />
-          </LineChart>
-        </ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={chartData}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#86CCD2"
+                strokeOpacity={0.2}
+                vertical={false}
+              />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11, fill: "#666666" }}
+                axisLine={{ stroke: "#86CCD2", strokeOpacity: 0.3 }}
+                tickLine={false}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#666666" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}`}
+                domain={[0, "auto"]}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#F3F9F9",
+                  border: "1px solid #86CCD2",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                }}
+                formatter={(value, _name, props) => [
+                  `${Number(value ?? 0).toFixed(3)} kWh`,
+                  (props?.payload as { status?: string })?.status ?? "",
+                ]}
+                labelFormatter={(label) => `Time: ${label}`}
+              />
+              <Line
+                type="monotone"
+                dataKey="kwh"
+                stroke="#86CCD2"
+                strokeWidth={2}
+                dot={{ fill: "#86CCD2", strokeWidth: 0, r: 3 }}
+                activeDot={{ r: 5, fill: "#86CCD2", stroke: "#F3F9F9" }}
+                connectNulls
+              />
+            </LineChart>
+          </ResponsiveContainer>
         )}
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-[#666666] dark:text-zinc-400">
+      <div className="mt-2 flex items-center gap-2 text-xs text-[#6f8c91]">
         <span>kWh per {GRANULARITY_LABELS[granularity].toLowerCase()}</span>
       </div>
     </div>
