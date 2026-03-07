@@ -3108,3 +3108,78 @@ The test script covers:
 - Monthly: full report with all 5 sections + AI narrative
 - Habits: evaluate + rewards balance
 
+
+---
+
+## Anomaly Case Seeding (2026-03-08)
+
+### Why This Is Needed
+
+The default simulator data shows all AC rooms trending DOWN vs last week (-14% to -19%), so the AI weekly recommendation engine returns "Usage is on track — no change recommended" for all 4 rooms. This produces boring demo output.
+
+The anomaly seeder creates a realistic "bad usage day" (Mar 8) that triggers the AI to generate actionable recommendations.
+
+### What Gets Seeded
+
+Run once before your demo (or to reset the demo state):
+
+```bash
+uv run python -m scripts.seed_anomaly_cases
+```
+
+| Table | What is seeded |
+|---|---|
+| `ac_readings` | Mar 8: living room all-day at 23°C (midnight-4am at 22°C overnight anomaly), master room peak-day cooling 7am–6:30pm at 22°C |
+| `sp_energy_intervals` | Mar 8: household totals with `peak_flag=True` for 2pm–7pm slots |
+| `habit_events` | Mar 8: `achieved=False` for `offpeak_ac` and `weekly_reduction` (streak break) |
+| `weekly_recommendations` | Deletes existing W10 recs (lightweight `DELETE FROM`) and regenerates via API |
+| `applied_recommendations` | Deletes only the W10 rec_ids (scoped, does not affect other history) |
+
+### Before vs After
+
+| Metric | Before seeding | After seeding |
+|---|---|---|
+| Living room weekly kWh vs last week | -19.4% (on track) | **+54.8% ← anomaly** |
+| Master room weekly kWh vs last week | -14.3% (on track) | **+134.1% ← anomaly** |
+| Weekly recs action | "Usage on track, no change" | **Raise temp 1°C (4/4 rooms)** |
+| Habit events Mar 8 | n/a | achieved=False (streak broken) |
+| Monthly achievement rate | 45.2% | ~40% (more realistic) |
+
+### Demo State After Seeding
+
+**Daily snapshot** (8am fetch):
+- Living Room AC: ~92 kWh today, running all 48 slots, last temp 23°C — visible anomaly
+- Master Room AC: ~41 kWh today, ran 24 slots at 22°C — peak day cooling spike
+- Room 1 & 2: normal (good contrast)
+
+**Weekly recommendations** (all 4 pending, ready for user approval):
+```
+ac-living-room   24°C → 25°C  Usage up 54.8% vs last week
+ac-master-room   23°C → 24°C  Usage up 134.1% vs last week
+ac-room-1        25°C → 26°C  Usage up 25.7% vs last week
+ac-room-2        25°C → 26°C  Usage up 11.0% vs last week
+```
+
+**Monthly report**:
+- March 2026: 425 kWh (-54% vs February's 930 kWh)
+- Habit achievement rate: ~40% (realistic — shows good streak broken by anomaly day)
+- AI narrative references both the improvement and the recent spike
+
+### Re-running the Seeder
+
+The seeder is **idempotent for habit_events** (checks for existing Mar 8 rows before inserting). For `ac_readings` and `sp_energy_intervals`, it inserts new rows each run — run it only once per demo reset.
+
+To fully reset the demo to a clean state before a presentation:
+```bash
+# Reset W10 recs only (lightweight, safe to run multiple times)
+uv run python -m scripts.seed_anomaly_cases
+
+# Verify all flows pass
+uv run python -m scripts.test_integration_flow
+```
+
+### ClickHouse Safety Notes
+
+- Uses `DELETE FROM table WHERE ...` (lightweight delete, non-blocking) — not `ALTER TABLE DELETE` (which is a mutation that rewrites data parts)
+- `applied_recommendations` cleanup is scoped to the specific W10 `rec_id` values — does not affect other weeks
+- `sp_energy_intervals` totals are set to `AC kWh × 1.2` to account for non-AC appliance load (fridge, water heater, lights)
