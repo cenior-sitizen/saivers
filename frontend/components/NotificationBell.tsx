@@ -284,8 +284,12 @@ export function NotificationBell({ householdId }: { householdId: number }) {
       {/* ── Push notification toast ───────────────────────────────────────── */}
       {toast && !open && (
         <div
-          className="fixed bottom-[5.5rem] left-1/2 z-[100] w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2"
-          style={{ animation: "slideUpFade 0.3s ease-out" }}
+          className="fixed left-1/2 z-[100] w-[calc(100vw-2rem)] max-w-sm"
+          style={{
+            bottom: "5.5rem",
+            transform: "translateX(-50%)",
+            animation: "slideUpFade 0.3s ease-out both",
+          }}
         >
           <div
             className={`rounded-2xl border shadow-[0_20px_50px_rgba(0,74,82,0.18)] backdrop-blur-xl ${
@@ -600,12 +604,20 @@ export function NotificationBell({ householdId }: { householdId: number }) {
       {/* ── CSS keyframes ─────────────────────────────────────────────────── */}
       <style>{`
         @keyframes slideUpFade {
-          from { opacity: 0; transform: translateX(-50%) translateY(16px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+          from { opacity: 0; translate: 0 16px; }
+          to   { opacity: 1; translate: 0 0; }
         }
         @keyframes shrinkWidth {
           from { width: 100%; }
           to   { width: 0%; }
+        }
+        .bell-pulse {
+          animation: bellRing 0.5s ease-out 1s 2;
+        }
+        @keyframes bellRing {
+          0%, 100% { transform: rotate(0deg); }
+          20% { transform: rotate(-15deg); }
+          60% { transform: rotate(15deg); }
         }
       `}</style>
     </>
