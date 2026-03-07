@@ -3183,3 +3183,160 @@ uv run python -m scripts.test_integration_flow
 - Uses `DELETE FROM table WHERE ...` (lightweight delete, non-blocking) — not `ALTER TABLE DELETE` (which is a mutation that rewrites data parts)
 - `applied_recommendations` cleanup is scoped to the specific W10 `rec_id` values — does not affect other weeks
 - `sp_energy_intervals` totals are set to `AC kWh × 1.2` to account for non-AC appliance load (fridge, water heater, lights)
+
+---
+
+## Complete Demo Story: Behaviour Change Loop (2026-03-08)
+
+This section documents the full three-week narrative the demo tells, and which API endpoints to call at each stage.
+
+### The Story in Three Acts
+
+```
+Act 1 — DETECTION (W10: Mar 2-8)
+  Living room AC running all day at 23°C — 54% above last week
+  Master room at 22°C peak-day blast — 134% above last week
+  → AI generates 4 recommendations to raise temps + limit hours
+
+Act 2 — ACTION (W10 Saturday)
+  User sees recommendation cards, approves all 4
+  → WattCoach commands both AC units per room via MCP server
+  → New settings applied: all rooms +1°C, evening-only schedule
+
+Act 3 — RESULT (W11: Mar 9-15)
+  User follows new settings for one week
+  → Usage drops 63.8% vs anomaly week
+  → Habit streak rebuilds: 7 consecutive days achieved
+  → 480/500 WattPoints unlocked — S$5 CDC voucher almost ready
+  → March report: -45.2% vs February, S$122 saved
+```
+
+---
+
+### Act 1: Detection — what the frontend shows
+
+```
+GET /api/recommendations/weekly/1001
+```
+
+```json
+[
+  {"device_id": "ac-living-room",  "current_temp": 24, "rec_temp": 25,
+   "reason": "Usage up 54.8% vs last week. Raising set-point by 1°C reduces power draw ~5%."},
+  {"device_id": "ac-master-room",  "current_temp": 23, "rec_temp": 24,
+   "reason": "Usage up 134.1% vs last week..."},
+  {"device_id": "ac-room-1",       "current_temp": 25, "rec_temp": 26, ...},
+  {"device_id": "ac-room-2",       "current_temp": 25, "rec_temp": 26, ...}
+]
+```
+
+Show as 4 recommendation cards with before/after temperature diff.
+
+---
+
+### Act 2: Action — user approves the pop-up
+
+```
+POST /api/recommendations/apply/1001
+{"rec_ids": ["<living-rec-id>", "<master-rec-id>", "<room1-rec-id>", "<room2-rec-id>"]}
+```
+
+Response confirms each room's 2 AC units were commanded:
+```json
+[
+  {"device_id": "ac-living-room", "success": true, "new_temp": 25,
+   "units": [{"device_id": "ac-living-room-1", "success": true},
+             {"device_id": "ac-living-room-2", "success": true}]},
+  ...
+]
+```
+
+Re-fetch `GET /api/recommendations/weekly/1001` → all show `already_applied: true`.
+
+---
+
+### Act 3: Result — one week later
+
+#### Before/After room comparison
+
+| Room | W10 (anomaly) | W11 (following recs) | Change |
+|---|---|---|---|
+| Living Room | 193.5 kWh @ 24°C all-day | 46.2 kWh @ 25°C evening-only | **-76.1%** |
+| Master Room | 64.4 kWh @ 23°C peak-day | 33.6 kWh @ 24°C evening-only | **-47.8%** |
+| Room 1 | 17.5 kWh | 12.3 kWh @ 26°C | **-29.4%** |
+| Room 2 | 37.4 kWh | 21.0 kWh @ 26°C | **-43.8%** |
+| **TOTAL** | **312.7 kWh** | **113.1 kWh** | **-63.8%** |
+
+#### Habit streak (call GET /api/habits/rewards/1001)
+
+```
+Mar 1  ✓ streak 1    Mar 9  ✓ streak 1  ← rebuilding after anomaly
+Mar 2  ✓ streak 2    Mar 10 ✓ streak 2
+Mar 3  ✓ streak 3    Mar 11 ✓ streak 3
+Mar 4  ✓ streak 4    Mar 12 ✓ streak 4
+Mar 5  ✓ streak 5    Mar 13 ✓ streak 5
+Mar 6  ✓ streak 6    Mar 14 ✓ streak 6
+Mar 7  ✓ streak 7    Mar 15 ✓ streak 7  ← milestone bonus +100pts
+Mar 8  ✗ BROKEN      (AC ran overnight at 22°C — anomaly day)
+```
+
+#### Rewards milestone (call GET /api/habits/rewards/1001)
+
+```json
+{
+  "points_balance": 480,
+  "points_to_next_voucher": 20,
+  "can_redeem": false,
+  "voucher_value_sgd": 5.0,
+  "voucher_threshold": 500
+}
+```
+Bar: `[███████████████████░]` 96% — almost there!
+
+#### Monthly report (call GET /api/reports/monthly/1001)
+
+```json
+{
+  "energy": {
+    "kwh_this_month": 510.5,
+    "kwh_prev_month": 930.9,
+    "cost_sgd_this_month": 148.65,
+    "cost_sgd_prev_month": 270.98,
+    "change_pct": -45.2
+  },
+  "habits": {
+    "achieved_count": 22,
+    "total_days_in_month": 31,
+    "achievement_rate_pct": 71.0
+  },
+  "ai_narrative": "Fantastic job on your energy-saving journey this month! You've reduced your electricity usage by an impressive 45.2%, saving over S$122 on your bill..."
+}
+```
+
+---
+
+### Demo Reset Instructions
+
+To get back to clean demo state before a presentation:
+
+```bash
+# Step 1: Reset anomaly data and recs (W10)
+uv run python -m scripts.seed_anomaly_cases
+
+# Step 2: Seed success week (W11)
+uv run python -m scripts.seed_success_week
+
+# Step 3: Verify all API flows pass
+uv run python -m scripts.test_integration_flow
+```
+
+All three scripts are idempotent for `habit_events` and `reward_transactions` (check before inserting). Run them in order.
+
+### Recommended Demo Sequence (2 minutes)
+
+1. **(30s)** Open dashboard → "8am data pull" → show bar chart going UP this week
+2. **(15s)** Click Recommendations tab → show 4 anomaly cards (temp too low, usage spiked)
+3. **(30s)** Tick all 4 rooms → click "Apply" → confirmation modal → confirm
+4. **(15s)** Show success toast: "WattCoach updated 8 AC units via smart home MCP"
+5. **(15s)** "Fast-forward one week" → show Monthly Report: -45.2%, 22/31 habit days
+6. **(15s)** Show Rewards tab: [███████████████████░] 480/500 — "20 more points to your S$5 voucher"
