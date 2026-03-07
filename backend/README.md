@@ -2654,3 +2654,457 @@ report.ai_narrative               // GPT-4o 2-3 sentence summary
 | No data for requested month | All metrics return 0, narrative uses template |
 | OpenAI unavailable | Falls back to deterministic template narrative |
 | ClickHouse unavailable | All metrics return 0 defaults |
+
+---
+
+## Frontend Integration Guide (2026-03-08)
+
+This section documents the **exact API call sequence** the frontend should make for each time cadence, the pop-up recommendation flow, and tips for making the live demo compelling.
+
+---
+
+### Architecture Overview
+
+```
+Frontend                Backend (FastAPI)         ClickHouse         MCP Layer
+   |                         |                        |                  |
+   |── 8am daily fetch ──────>|── query ac_readings ──>|                  |
+   |                         |── query sp_intervals ──>|                  |
+   |<── snapshot + graph ────|                        |                  |
+   |                         |                        |                  |
+   |── Saturday weekly ─────>|── query weekly_recs ──>|                  |
+   |<── recommendation cards-|                        |                  |
+   |                         |                        |                  |
+   |── User clicks Apply ───>|── apply_settings ─────────────────────────>|
+   |                         |── INSERT applied_recs ─>|                  |
+   |<── success + new_temp ──|                        |                  |
+   |                         |                        |                  |
+   |── Monthly dashboard ───>|── 5 aggregate queries ─>|                  |
+   |<── full report + AI ────|── OpenAI GPT-4o        |                  |
+```
+
+---
+
+### DAILY FLOW — What to call at 8am page load
+
+Call these 4 endpoints in parallel on every page open (or on a scheduled 8am refresh):
+
+#### 1. Per-room AC snapshot (graph data)
+
+```
+GET /api/devices/daily-snapshot/{household_id}
+```
+
+Returns today's usage per room. Use for the main usage bar chart.
+
+```json
+[
+  {
+    "device_id": "ac-living-room",
+    "device_name": "Living Room AC",
+    "kwh_today": 8.42,
+    "runtime_hours": 6.5,
+    "avg_temp_c": 24.6,
+    "is_on_now": true,
+    "power_w": 1883.7
+  },
+  ...  // 4 rooms always returned (zeros if no data)
+]
+```
+
+| Field | Frontend use |
+|---|---|
+| `kwh_today` | Bar height in daily usage chart |
+| `runtime_hours` | "Running X hrs today" badge |
+| `is_on_now` | Green/red status dot |
+| `power_w` | Live watt readout (from mock server) |
+
+#### 2. Weekly bill + chart
+
+```
+GET /api/usage/weekly-bill/{household_id}
+```
+
+Returns the 4 summary metric cards, 7-day bar chart data, and daily breakdown table.
+
+```json
+{
+  "summary_metrics": [
+    {"label": "Total Usage This Week",    "value": "199.05 kWh"},
+    {"label": "Estimated Cost This Week", "value": "S$57.95"},
+    {"label": "Saved vs Last Week",       "value": "S$13.27 saved"},
+    {"label": "Projected Monthly Cost",   "value": "S$250.92"}
+  ],
+  "weekly_comparison": {
+    "this_week_kwh": 199.05,
+    "last_week_kwh": 244.65,
+    "percent_change": -18.6,
+    "this_week_cost": "S$57.95",
+    "last_week_cost": "S$71.22"
+  },
+  "chart_data": [
+    {"label": "Mon", "value": 31.136},
+    {"label": "Tue", "value": 31.808},
+    ...  // 7 days, Mon–Sun
+  ],
+  "daily_breakdown": [...]
+}
+```
+
+#### 3. Room device status (weekly comparison)
+
+```
+GET /api/devices/rooms/{household_id}
+```
+
+Returns per-room weekly kWh, share of total, and trend vs last week.
+
+```json
+[
+  {
+    "room_id": "living-room",
+    "room_name": "Living Room",
+    "device_id": "ac-living-room",
+    "status": "On",
+    "temp_setting_c": 24,
+    "kwh_today": 8.42,
+    "kwh_this_week": 100.68,
+    "percent_of_total": 61.4,
+    "trend_vs_last_week_pct": -19.4,
+    "runtime_week_hours": 72.0,
+    "avg_temp_c": 24.6,
+    ...
+  },
+  ...  // 4 rooms
+]
+```
+
+| Field | Frontend use |
+|---|---|
+| `percent_of_total` | Pie/donut slice size |
+| `trend_vs_last_week_pct` | Red/green arrow badge (negative = improved) |
+| `status` | On/Off chip |
+| `avg_temp_c` | Temperature readout |
+
+#### 4. AI insights
+
+```
+GET /api/insights/{household_id}
+```
+
+Returns 2–4 AI-powered insight cards, each with a plain-language explanation and projected savings.
+
+```json
+[
+  {
+    "id": "insight_1001_001",
+    "type": "ac_night_anomaly",
+    "title": "Your AC ran at 2am — 7 nights this week",
+    "plain_language": "...",
+    "evidence": {"baseline_kwh": 0.05, "actual_kwh": 0.101, ...},
+    "recommendation": {"action": "Set AC auto-off schedule: 10pm–2am at 25°C"},
+    "projected_savings": {"kwh": 0.036, "sgd": 0.01, "co2_kg": 0.014, "per": "night"},
+    "can_automate": true
+  }
+]
+```
+
+If `can_automate: true`, show an **"Apply Now"** button that triggers the recommendation apply flow below.
+
+---
+
+### WEEKLY FLOW — Saturday recommendation cycle
+
+This is the **core demo path**: AI analyses the week, suggests changes, user approves, backend commands the AC.
+
+#### Step 1: Load recommendations (idempotent)
+
+```
+GET /api/recommendations/weekly/{household_id}
+```
+
+Returns 4 per-device recommendations (one per AC room). Calling multiple times returns the same set for the week — never double-generates.
+
+```json
+[
+  {
+    "rec_id": "550e8400-e29b-41d4-a716-446655440000",
+    "device_id": "ac-living-room",
+    "device_name": "Living Room AC",
+    "current_temp": 25,
+    "rec_temp": 26,
+    "current_mode": "cool",
+    "rec_mode": "cool",
+    "reason": "Usage up 18% vs last week. Raising set-point by 1°C reduces power draw ~5%.",
+    "already_applied": false
+  },
+  ...  // 4 rooms
+]
+```
+
+**Frontend recommendation card UI:**
+- Show `current_temp → rec_temp` diff (e.g., "25°C → 26°C")
+- Show `reason` as the explanation text
+- Grey out / show ✓ badge when `already_applied: true`
+- Checkbox or toggle for user to select which to apply
+
+#### Step 2: User approves → show confirmation pop-up
+
+Before calling apply, show a confirmation modal:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Apply AI Recommendations                            │
+│                                                      │
+│  WattCoach will update your AC settings:             │
+│  • Living Room:  25°C → 26°C (cool mode)            │
+│  • Master Room:  24°C → 25°C (cool mode)            │
+│                                                      │
+│  This is done via the smart home MCP server.        │
+│  You can reverse this from the Devices tab.         │
+│                                                      │
+│  [Cancel]              [Confirm & Apply]             │
+└─────────────────────────────────────────────────────┘
+```
+
+#### Step 3: POST apply — triggers MCP server
+
+```
+POST /api/recommendations/apply/{household_id}
+Content-Type: application/json
+
+{
+  "rec_ids": ["550e8400-...", "661f9511-..."]
+}
+```
+
+The backend:
+1. Looks up each `rec_id` in `weekly_recommendations`
+2. Calls `MCPClient.apply_settings(device_id, rec_temp, rec_mode)`
+3. MCP mock mode → POSTs to `http://localhost:8002/ac/{hid}/{unit}/on` for **both simulator units** per room
+4. Inserts into `applied_recommendations` (idempotency guard)
+5. Returns per-rec result
+
+```json
+[
+  {
+    "success": true,
+    "partial": false,
+    "rec_id": "550e8400-...",
+    "device_id": "ac-living-room",
+    "action_id": "ACT-1001-550e8400",
+    "new_temp": 26,
+    "new_mode": "cool",
+    "units": [
+      {"unit": "ac-living-room-1", "success": true},
+      {"unit": "ac-living-room-2", "success": true}
+    ]
+  }
+]
+```
+
+| Field | Meaning |
+|---|---|
+| `success: true` | Both AC units updated |
+| `partial: true` | One unit failed, one succeeded |
+| `already_applied: true` | This rec was applied in a previous call (idempotent) |
+| `units[]` | Per-unit result — each room has 2 simulator units |
+
+#### Step 4: Show success toast + re-fetch
+
+After a successful apply response, call the weekly endpoint again:
+```
+GET /api/recommendations/weekly/{household_id}
+```
+The applied recs will now have `already_applied: true`. Update the UI to show ✓ badges.
+
+**Also refresh the device snapshot to show new temperatures:**
+```
+GET /api/devices/daily-snapshot/{household_id}
+```
+
+#### Step 5: Recommendation history
+
+Show the last 4 weeks on the recommendations history tab:
+
+```
+GET /api/recommendations/history/{household_id}
+```
+
+```json
+[
+  {
+    "iso_week": "2026-W10",
+    "recommendations": [...],
+    "applied_count": 3,
+    "total_count": 4
+  }
+]
+```
+
+---
+
+### MONTHLY FLOW — Performance report dashboard
+
+Call once when the user opens the Monthly Report view:
+
+```
+GET /api/reports/monthly/{household_id}?year=2026&month=3
+```
+
+Both `year` and `month` default to the current SGT month if omitted.
+
+**Key fields for the monthly dashboard:**
+
+```typescript
+// Energy savings hero card
+const pctChange = report.energy.change_pct;          // -74.7 (negative = improved)
+const costThis  = report.energy.cost_sgd_this_month; // S$68.49
+const costPrev  = report.energy.cost_sgd_prev_month; // S$270.98
+const carbonKg  = report.energy.carbon_kg_this_month; // 94.58 kg CO₂
+
+// Habits ring
+const habitRate = report.habits.achievement_rate_pct; // 45.2%
+const habitDays = report.habits.achieved_count;        // 14 days
+
+// Recommendations chip
+const applied   = report.recommendations.applied_count;   // 4
+const generated = report.recommendations.total_generated; // 4
+
+// Neighbourhood comparison
+const nbAvg      = report.neighbourhood.avg_kwh_this_month; // 217.71
+const yourKwh    = report.neighbourhood.your_kwh_this_month; // 235.27
+const percentile = report.neighbourhood.percentile;           // 100 = highest
+const greenCO2   = report.neighbourhood.green_grid_co2_kg;   // CO₂ offset
+
+// AI narrative (show as hero text)
+const narrative  = report.ai_narrative; // 2-3 sentence GPT-4o summary
+```
+
+**Suggested monthly report layout:**
+
+```
+┌─────────────────────────────────────────────────────┐
+│  March 2026 Performance Report                       │
+│                                                      │
+│  ⚡ 235.3 kWh  (-74.7% vs Feb)    S$68.49 spent     │
+│  🌿 94.6 kg CO₂  ·  14/31 habit days (45%)          │
+│                                                      │
+│  "Fantastic work this month! You've achieved an      │
+│   impressive 74.7% reduction..."     [AI narrative]  │
+│                                                      │
+│  Neighbourhood  ──────────────●────────  Your home  │
+│  217.7 kWh avg                         235.3 kWh    │
+│                                                      │
+│  ✅ 4/4 recommendations applied this month           │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+### HABITS & REWARDS FLOW
+
+#### Evaluate habits (call once daily, ideally after 8am fetch)
+
+```
+POST /api/habits/evaluate/{household_id}
+```
+
+Evaluates today's energy usage against habit thresholds, records the result, and awards points automatically.
+
+```json
+{
+  "evaluation": {
+    "offpeak_ac": {"achieved": true, "actual_kwh": 0.2, "threshold_kwh": 0.3},
+    "weekly_reduction": {"achieved": false, ...}
+  },
+  "points_awarded": [
+    {"habit": "offpeak_ac", "points": 20, "streak": 8}
+  ],
+  "new_balance": 260,
+  "points_to_voucher": 240
+}
+```
+
+#### Rewards balance + voucher status
+
+```
+GET /api/habits/rewards/{household_id}
+```
+
+```json
+{
+  "points_balance": 240,
+  "points_to_next_voucher": 260,
+  "vouchers_available": 0,
+  "can_redeem": false,
+  "voucher_value_sgd": 5.0,
+  "voucher_threshold": 500,
+  "redeemed_vouchers": [],
+  "history": [...]
+}
+```
+
+Show a progress bar: `points_balance / voucher_threshold` → `240/500 = 48%`.
+
+---
+
+### Live Demo Script
+
+For the hackathon presentation, follow this sequence to tell a clear story:
+
+#### Scene 1 — Daily insights (30 seconds)
+
+1. Open the dashboard → frontend fires 4 daily fetch calls in parallel
+2. Show the bar chart: "This is the 8am data pull — ClickHouse returns 7 days of half-hourly data in milliseconds"
+3. Point to the AI insight card: "WattCoach detected the AC running at 2am — 7 nights in a row"
+4. Highlight the `trend_vs_last_week_pct` arrows: "Living Room is down 19% — that's S$13 saved vs last week"
+
+#### Scene 2 — Weekly recommendation pop-up (60 seconds)
+
+1. Click "Weekly Recommendations" tab → fires `GET /api/recommendations/weekly/1001`
+2. Show the 4 recommendation cards: "GPT-4o analysed this week vs last week and suggested raising set-points by 1°C across 3 rooms"
+3. **Check 2 rooms** → click "Apply Recommendations"
+4. Show the confirmation modal: "WattCoach is about to command your Xiaomi smart home devices via MCP"
+5. Click Confirm → fires `POST /api/recommendations/apply/1001`
+6. Show the response: "Both AC units in the Living Room just received the new temperature setting"
+7. Re-fetch snapshot → show updated `temp_setting_c` on the device cards
+8. Point out `already_applied: true` on applied recs: "Idempotent — the same command won't be sent twice"
+
+#### Scene 3 — Monthly report (30 seconds)
+
+1. Click "Monthly Report" → fires `GET /api/reports/monthly/1001?year=2026&month=3`
+2. Read the AI narrative aloud: "235 kWh this month — 74.7% less than February"
+3. Show the neighbourhood comparison bar: "Household 1001 is at the 100th percentile — using slightly more than the Punggol average"
+4. Show the green grid contribution: "If they were below average, we'd show their CO₂ offset contribution to the grid"
+5. Point to habits ring: "14 habit-achievement days — each earns 20 WattPoints towards an S$5 CDC voucher"
+
+#### Key talking points
+
+- **No real-time polling** — we pull at 8am from ClickHouse; the data is always available instantly
+- **MCP abstraction** — the same `MCPClient.apply_settings()` call works for mock server today and Xiaomi MIoT tomorrow by changing `MCP_MODE=miot`
+- **AI is additive, not the foundation** — all the numbers (kWh, S$, CO₂) are computed deterministically; GPT-4o only generates the plain-language text
+- **Idempotency everywhere** — weekly recs are generated once per ISO week; apply is a no-op if already done
+
+---
+
+### Running the Integration Test
+
+Verify all backend APIs before frontend handoff:
+
+```bash
+# 1. Start backend (if not running)
+uv run uvicorn app.main:app --port 8003
+
+# 2. In another terminal, run the full integration flow test
+uv run python scripts/test_integration_flow.py
+```
+
+Expected output: all green PASS, exit code 0.
+
+The test script covers:
+- Daily: daily-snapshot, weekly-bill, room status, AI insights
+- Weekly: generate recs, apply via MCP mock, idempotency re-apply, history
+- Monthly: full report with all 5 sections + AI narrative
+- Habits: evaluate + rewards balance
+
