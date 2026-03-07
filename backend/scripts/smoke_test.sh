@@ -92,6 +92,21 @@ check "GET /api/insights/ac-pattern/$HOUSEHOLD" "$S" 200
 S=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/insights/$HOUSEHOLD")
 check "GET /api/insights/$HOUSEHOLD" "$S" 200
 
+# ── Rooms / Appliances ────────────────────────
+echo ""
+echo "[ Rooms & Appliances ]"
+BODY=$(curl -s "$BASE/api/devices/rooms/$HOUSEHOLD")
+S=$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(0 if len(d)==4 else 1)" 2>/dev/null)
+[ "$S" = "0" ] && ok "GET /api/devices/rooms/$HOUSEHOLD (4 rooms)" || fail "GET /api/devices/rooms/$HOUSEHOLD" "$BODY"
+
+S=$(echo "$BODY" | python3 -c "
+import sys, json
+rooms = json.load(sys.stdin)
+total = sum(r['percent_of_total'] for r in rooms)
+print(0 if abs(total - 100.0) < 1.0 else 1)
+" 2>/dev/null)
+[ "$S" = "0" ] && ok "GET /api/devices/rooms/$HOUSEHOLD (percent_of_total sums ~100)" || fail "GET /api/devices/rooms/$HOUSEHOLD percent_of_total" "$BODY"
+
 # ── Usage / Weekly Bill ───────────────────────
 echo ""
 echo "[ Weekly Bill ]"

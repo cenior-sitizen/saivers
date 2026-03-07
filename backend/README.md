@@ -1582,6 +1582,65 @@ P2 — Nice to have:
 
 ---
 
+### Rooms & Appliances Endpoint (NEW)
+
+```
+GET /api/devices/rooms/{household_id}
+```
+
+**Example:** `curl http://localhost:8000/api/devices/rooms/1001`
+
+**Response:** Array of 4 room objects (always 4 rooms, zeros if no data)
+```json
+[
+  {
+    "room_id": "living-room",
+    "room_name": "Living Room",
+    "slug": "living-room",
+    "appliance": "Air Conditioner",
+    "device_id": "ac-living-room",
+    "status": "On",
+    "temp_setting_c": 24,
+    "runtime_today_hours": 6.0,
+    "kwh_today": 4.1,
+    "kwh_this_week": 18.2,
+    "percent_of_total": 42.5,
+    "runtime_week_hours": 12.0,
+    "avg_temp_c": 24.5,
+    "trend_vs_last_week_pct": -5.2
+  },
+  { "room_id": "master-room", "room_name": "Master Room", "..." },
+  { "room_id": "room-1",      "room_name": "Room 1",      "..." },
+  { "room_id": "room-2",      "room_name": "Room 2",      "..." }
+]
+```
+
+**Field mapping for frontend components:**
+
+| Component | Field |
+|---|---|
+| `RoomCard` (home page) | `slug` → href, `room_name` → display name |
+| `RoomUsageCard` | `room_name`, `status`, `kwh_this_week`, `percent_of_total`, `runtime_week_hours`, `avg_temp_c` |
+| Room detail page | `status`, `temp_setting_c`, `runtime_today_hours`, `kwh_today` |
+| Trend indicator | `trend_vs_last_week_pct` (negative = improved) |
+
+**How to replace `homeRooms` in `user/mockData.ts`:**
+```ts
+const res   = await fetch("http://localhost:8000/api/devices/rooms/1001");
+const rooms = await res.json();
+// rooms[].slug       → RoomCard href /user/aircon/{slug}
+// rooms[].room_name  → RoomCard display name
+// rooms[].status     → "On" | "Off"
+// rooms[].percent_of_total always sums to 100 across 4 rooms
+```
+
+**Notes:**
+- Always returns exactly 4 rooms in fixed order: Living Room → Master Room → Room 1 → Room 2
+- `trend_vs_last_week_pct` is negative when this week < last week (good)
+- `percent_of_total` is 0 for all rooms if no usage data exists yet
+
+---
+
 ### Weekly Bill Endpoint (NEW)
 
 ```
