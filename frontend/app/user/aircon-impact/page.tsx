@@ -191,270 +191,135 @@ export default function AirconImpactScreen() {
 
       {!loading && !error && (
         <>
-          {/* ── Weekly energy metrics ── */}
+          {/* ── 1. Cost hero ── */}
           <section className="mb-5">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">
-              This Week — Total Home Energy
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                {
-                  label: "Total Usage",
-                  value: sp ? `${sp.thisWeekKwh} kWh` : "—",
-                  sub: sp ? `vs last week ${sp.lastWeekKwh} kWh` : "",
-                },
-                {
-                  label: "Estimated Cost",
-                  value: sp ? `S$${sp.thisWeekCostSgd.toFixed(2)}` : "—",
-                  sub: sp
-                    ? `S$${(sp.thisWeekCostSgd * 4.33).toFixed(0)}/month est.`
-                    : "",
-                },
-                {
-                  label: "vs Last Week",
-                  value: sp
-                    ? `${sp.vsLastWeekPct > 0 ? "+" : ""}${sp.vsLastWeekPct}%`
-                    : "—",
-                  sub:
-                    sp && sp.vsLastWeekPct < 0
-                      ? "↓ Improving"
-                      : "↑ Higher usage",
-                  accent:
-                    sp && sp.vsLastWeekPct > 0
-                      ? "text-red-600"
-                      : "text-emerald-600",
-                },
-                {
-                  label: "Carbon Footprint",
-                  value: sp ? `${sp.thisWeekCarbonKg.toFixed(1)} kg CO₂` : "—",
-                  sub: sp
-                    ? `≈ ${Math.round(sp.thisWeekCarbonKg * 6.7)} km car trip`
-                    : "This week",
-                },
-              ].map((m) => (
-                <div
-                  key={m.label}
-                  className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-3 shadow-[0_8px_24px_rgba(0,123,138,0.07)]"
-                >
-                  <p className="text-xs text-[#6f8c91]">{m.label}</p>
-                  <p
-                    className={`mt-0.5 text-lg font-bold ${m.accent ?? "text-[#10363b]"}`}
-                  >
-                    {m.value}
-                  </p>
-                  {m.sub && (
-                    <p className="text-[10px] text-[#6f8c91]">{m.sub}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* ── Savings + Tangible Impact ── */}
-          {savedCost > 0 && (
-            <section className="mb-5">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
-                <p className="text-sm font-semibold text-emerald-800">
-                  Saving this week vs last
+            <div className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-5 py-5 shadow-[0_8px_24px_rgba(0,123,138,0.07)]">
+              <p className="text-xs font-medium text-[#6f8c91]">This week&apos;s electricity cost</p>
+              <div className="mt-1 flex items-end gap-3">
+                <p className="text-4xl font-bold text-[#10363b]">
+                  {sp ? `S$${sp.thisWeekCostSgd.toFixed(2)}` : "—"}
                 </p>
-                <p className="mt-1 text-2xl font-bold text-emerald-700">
-                  S${savedCost.toFixed(2)}
-                </p>
-                {impact && (
-                  <span className="mt-2 inline-block rounded-full border border-emerald-200 bg-white px-3 py-0.5 text-[11px] text-emerald-700">
-                    {impact}
-                  </span>
-                )}
-                <p className="mt-2 text-xs text-emerald-600">
-                  Projected monthly saving: S${(savedCost * 4.33).toFixed(2)}
-                </p>
-              </div>
-            </section>
-          )}
-
-          {/* ── District & Singapore Comparison ── */}
-          {dist && (
-            <section className="mb-5">
-              <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">
-                How You Compare
-              </h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-3">
-                  <p className="text-xs text-[#6f8c91]">vs Punggol avg</p>
-                  <p
-                    className={`mt-0.5 text-lg font-bold ${dist.percentVsDistrict > 0 ? "text-red-600" : "text-emerald-600"}`}
-                  >
-                    {dist.percentVsDistrict > 0 ? "+" : ""}
-                    {dist.percentVsDistrict}%
-                  </p>
-                  <p className="text-[10px] text-[#6f8c91]">
-                    Neighbourhood avg {dist.districtPerHomeWeekKwh} kWh/wk
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-3">
-                  <p className="text-xs text-[#6f8c91]">vs SG avg (est.)</p>
-                  <p
-                    className={`mt-0.5 text-lg font-bold ${dist.percentVsSingapore > 0 ? "text-red-600" : "text-emerald-600"}`}
-                  >
-                    {dist.percentVsSingapore > 0 ? "+" : ""}
-                    {dist.percentVsSingapore}%
-                  </p>
-                  <p className="text-[10px] text-[#6f8c91]">
-                    National ref. {dist.sgNationalPerHomeWeekKwh} kWh/wk
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* ── Today's AC ── */}
-          <section className="mb-5">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">
-              Today&apos;s AC
-            </h2>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "Status", value: today?.status ?? "—" },
-                {
-                  label: "Set Temp",
-                  value: today ? `${today.temperature}°C` : "—",
-                },
-                {
-                  label: "Runtime",
-                  value: today ? `${today.runtimeHours}h` : "—",
-                },
-              ].map((m) => (
-                <div
-                  key={m.label}
-                  className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-3 py-3 shadow-[0_8px_24px_rgba(0,123,138,0.07)]"
-                >
-                  <p className="text-[10px] text-[#6f8c91]">{m.label}</p>
-                  <p className="mt-0.5 text-base font-bold text-[#10363b]">
-                    {m.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Peak hour callout from behaviour summary */}
-            {beh && (
-              <div className="mt-2 rounded-xl border border-[rgba(157,207,212,0.30)] bg-[rgba(134,204,210,0.08)] px-4 py-2.5">
-                <p className="text-xs text-[#4d6b70]">
-                  <span className="font-semibold text-[#10363b]">
-                    Peak usage time:{" "}
-                  </span>
-                  {beh.peakHourRange} · Highest on{" "}
-                  <span className="font-semibold">{beh.highestWeekday}s</span>
-                </p>
-              </div>
-            )}
-          </section>
-
-          {/* ── Homes in Your Area (anonymous) ── */}
-          <section className="mb-5">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">
-              Homes in Your Area
-            </h2>
-            <div className="space-y-2">
-              {USAGE_TIERS.map((tier) => {
-                const isMe = tier.hid === householdId;
-                return (
-                  <div
-                    key={tier.label}
-                    className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
-                      isMe
-                        ? "border-[#86CCD2] bg-[#E0F4F5]"
-                        : "border-[rgba(157,207,212,0.20)] bg-white"
+                {sp && (
+                  <span
+                    className={`mb-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      sp.vsLastWeekPct <= 0
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-700"
                     }`}
                   >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[#10363b]">
-                        {isMe ? "Your Home" : tier.label}
-                        {isMe && (
-                          <span className="ml-2 rounded-full bg-[#007B8A] px-2 py-0.5 text-[10px] font-semibold text-white">
-                            You
-                          </span>
-                        )}
-                      </p>
-                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[rgba(207,228,230,0.40)]">
-                        <div
-                          className={`h-full rounded-full ${isMe ? "bg-[#007B8A]" : "bg-[#6f8c91]"}`}
-                          style={{ width: `${(tier.kwh / 255) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="ml-4 shrink-0 text-right">
-                      <p className="text-sm font-bold text-[#10363b]">
-                        {isMe && sp
-                          ? `${sp.thisWeekKwh} kWh`
-                          : `~${tier.kwh} kWh`}
-                      </p>
-                      <p className="text-xs text-[#6f8c91]">
-                        {isMe && sp
-                          ? `S$${sp.thisWeekCostSgd.toFixed(0)}/wk`
-                          : `~S$${tier.cost}/wk`}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="mt-1.5 text-[10px] text-[#6f8c91]">
-              * Reference tiers — individual home identities are kept private
-            </p>
-          </section>
+                    {sp.vsLastWeekPct <= 0 ? "↓" : "↑"}{" "}
+                    {Math.abs(sp.vsLastWeekPct)}% vs last week
+                  </span>
+                )}
+              </div>
 
-          {/* ── Bigger Picture ── */}
-          <section className="mb-5">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">
-              Your Impact on the Grid
-            </h2>
-            <div className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-4">
-              <p className="text-sm text-[#4d6b70]">
-                When many households shift high-usage appliances to off-peak
-                hours (before 7am or after 11pm), Singapore&apos;s grid runs
-                more efficiently — reducing the need for costly peaking plants
-                and lowering carbon emissions for everyone.
-              </p>
-              {sp && (
-                <div className="mt-3 flex gap-4 border-t border-[rgba(157,207,212,0.30)] pt-3">
-                  <div>
-                    <p className="text-[10px] text-[#6f8c91]">
-                      Your CO₂ this week
-                    </p>
-                    <p className="text-sm font-bold text-[#10363b]">
-                      {sp.thisWeekCarbonKg.toFixed(1)} kg
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-[#6f8c91]">≈ car km</p>
-                    <p className="text-sm font-bold text-[#10363b]">
-                      {Math.round(sp.thisWeekCarbonKg * 6.7)} km
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-[#6f8c91]">
-                      Trees to offset
-                    </p>
-                    <p className="text-sm font-bold text-[#10363b]">
-                      {(sp.thisWeekCarbonKg / 21).toFixed(1)}
-                    </p>
-                  </div>
+              {/* Savings callout */}
+              {savedCost > 0 && (
+                <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2">
+                  <p className="text-sm font-medium text-emerald-700">
+                    You saved S${savedCost.toFixed(2)} compared to last week
+                    {impact ? ` — ${impact}` : ""}
+                  </p>
+                </div>
+              )}
+
+              {/* AC habit pills */}
+              {(beh || today) && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {today && (
+                    <span className="rounded-full border border-[rgba(157,207,212,0.40)] bg-white px-3 py-1 text-xs text-[#4d6b70]">
+                      AC at {today.temperature}°C · {today.runtimeHours}h today
+                    </span>
+                  )}
+                  {beh && (
+                    <span className="rounded-full border border-[rgba(157,207,212,0.40)] bg-white px-3 py-1 text-xs text-[#4d6b70]">
+                      Busiest {beh.peakHourRange}
+                    </span>
+                  )}
+                  {beh && (
+                    <span className="rounded-full border border-[rgba(157,207,212,0.40)] bg-white px-3 py-1 text-xs text-[#4d6b70]">
+                      Highest on {beh.highestWeekday}s
+                    </span>
+                  )}
                 </div>
               )}
             </div>
           </section>
 
-          {/* ── Action-to-Reward Recommendations ── */}
+          {/* ── 2. How you compare ── */}
+          {dist && (
+            <section className="mb-5">
+              <h2 className="mb-3 text-sm font-semibold text-[#10363b]">
+                How you compare
+              </h2>
+              <div className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-4 shadow-[0_8px_24px_rgba(0,123,138,0.07)]">
+                {/* Homes bar */}
+                <div className="space-y-3">
+                  {USAGE_TIERS.map((tier) => {
+                    const isMe = tier.hid === householdId;
+                    const displayCost = isMe && sp ? sp.thisWeekCostSgd : tier.cost;
+                    const maxCost = USAGE_TIERS[0].cost;
+                    return (
+                      <div key={tier.label} className="flex items-center gap-3">
+                        <div className="w-20 shrink-0">
+                          <p className={`text-xs font-medium ${isMe ? "text-[#007B8A]" : "text-[#6f8c91]"}`}>
+                            {isMe ? "You" : tier.label.replace(" Home", "")}
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-2 overflow-hidden rounded-full bg-[rgba(207,228,230,0.40)]">
+                            <div
+                              className={`h-full rounded-full transition-all duration-700 ${isMe ? "bg-[#007B8A]" : "bg-[rgba(157,207,212,0.50)]"}`}
+                              style={{ width: `${(displayCost / maxCost) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="w-12 shrink-0 text-right">
+                          <p className={`text-xs font-semibold ${isMe ? "text-[#007B8A]" : "text-[#6f8c91]"}`}>
+                            S${Math.round(displayCost)}/wk
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Plain-language district callout */}
+                <div className="mt-4 border-t border-[rgba(157,207,212,0.20)] pt-3">
+                  <p className="text-sm text-[#4d6b70]">
+                    {dist.percentVsDistrict <= 0 ? (
+                      <>
+                        You use{" "}
+                        <span className="font-semibold text-emerald-700">
+                          {Math.abs(dist.percentVsDistrict)}% less
+                        </span>{" "}
+                        than the average home in your area.
+                      </>
+                    ) : (
+                      <>
+                        You use{" "}
+                        <span className="font-semibold text-amber-700">
+                          {dist.percentVsDistrict}% more
+                        </span>{" "}
+                        than the average home in your area.
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* ── 3. What you can do ── */}
           <section className="mb-8">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">
-              Recommended Actions
+            <h2 className="mb-3 text-sm font-semibold text-[#10363b]">
+              What you can do
             </h2>
             <div className="space-y-2">
               {recommendations.map((rec, i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-3 shadow-[0_4px_12px_rgba(0,123,138,0.06)]"
+                  className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-3.5 shadow-[0_4px_12px_rgba(0,123,138,0.06)]"
                 >
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 text-lg">{rec.icon}</span>
