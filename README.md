@@ -1,148 +1,148 @@
-# Saivers — AI for Actionable Energy Behavior Change
+# Saivers
 
-> A 24-hour prototype for the SP Group problem statement: using AI to help Singapore reduce energy wastage in households.
+Team: `Cenior Sitizen` | `HackOMania 2026`
 
----
+Saivers is an AI energy behaviour coach for Singapore households. It combines ClickHouse analytics, AI-generated coaching, LibreChat-powered admin investigation, and smart-device control to turn raw energy usage into actions that reduce waste, lower bills, and ease peak-hour demand.
 
-## Problem Statement
+Built for HackOMania 2026, SP Group challenge: `AI for Actionable Energy Behaviour Change`.
 
-Singapore households need better tools to understand and change their energy behavior. Existing solutions provide aggregate insights but lack the granularity and actionability to drive meaningful behavior change at the household level.
+## The Problem
 
-## Our Approach
+Households can already see electricity usage, but most still do not know:
 
-We focus on **households with smart appliances** — because we want **actionable** outcomes. Smart appliances give us appliance-level data and control, enabling both insights and automation.
+- what caused a spike
+- what action to take next
+- whether a behaviour change actually worked
 
----
+That is the gap Saivers solves. Instead of showing energy data as a passive dashboard, we turn it into a measurable action loop for Singapore households.
 
-## Current State: SP App
+## What We Built
 
-The SP App today provides **half-hourly electricity data** from the **master meter** of each household (tied to a unique `household_id`). Data is available at half-hourly, daily, weekly, monthly, and yearly granularities.
+Saivers is a full-stack prototype with four connected parts:
 
-**What it offers:**
-- Household vs. neighbourhood comparison
-- Household vs. last week comparison
+- `frontend/`: judge-facing product surfaces for the household and admin views
+- `backend/`: FastAPI, ClickHouse analytics, AI orchestration, reports, habits, and device actions
+- `librechat-config/`: admin investigation flow for natural-language analysis over energy data
+- `xiaomi-purifier/`: smart-device demo support for the live hardware control story
 
-**What it lacks:**
-- **Within-household visibility** — no breakdown of which appliances consume what
-- **Appliance-level insights** — no understanding of when specific devices are active
-- **Actionability** — insights without the ability to act on them
+End-to-end product flow:
 
----
+1. Ingest household interval data and device readings.
+2. Store and analyze the data in ClickHouse.
+3. Detect anomalies and behaviour patterns with deterministic logic.
+4. Use AI to explain the data in plain English and generate recommendations.
+5. Let the user approve actions and trigger device controls.
+6. Show habits, savings, and monthly impact.
+7. Let admins investigate households and neighbourhood trends with AI and LibreChat.
 
-## Our Proposal: Smart Appliance Enrichment
+## The AI Story
 
-We propose enriching SP Group's data with **smart home appliance data**. We aim to work with brands like **Xiaomi**, **Samsung**, and others — starting with **air conditioners** for the prototype.
+Saivers is intentionally AI-forward. AI is not used as a decorative chatbot. It is used where it creates real product value:
 
-Smart appliances provide:
-- **Appliance-level information** — which device, which room
-- **Hourly (or finer) data** — when each appliance is actively used
-- **Control capabilities** — the ability to automate and optimize usage
+- explaining unusual household energy behaviour in plain language
+- generating personalised energy recommendations from actual usage patterns
+- producing admin-facing operational summaries and anomaly explanations
+- supporting natural-language investigation in the admin flow through LibreChat over ClickHouse-backed data
 
----
+The system stays credible because AI is paired with deterministic analytics:
 
-## High-Level Architecture
+- ClickHouse stores and queries the energy evidence
+- backend services compute baselines, anomaly scores, savings, and behaviour metrics
+- AI turns those computed facts into clear coaching and decision support
 
-```
-┌─────────────────┐     ┌─────────────────────┐     ┌──────────────────────────┐
-│  Home Meter     │────▶│  SP Group Database  │────▶│  ClickHouse (Mock)       │
-│  (Half-hourly)  │     │  Raw + Processed    │     │  + Smart Appliance Data  │
-└─────────────────┘     └─────────────────────┘     └──────────────────────────┘
-                                                                  │
-                                        ┌─────────────────────────┴─────────────────────────┐
-                                        ▼                                                   ▼
-                               ┌─────────────────┐                               ┌─────────────────┐
-                               │  Admin Dashboard │                               │  User Mobile    │
-                               │  (CEO / Ops)     │                               │  (Households)   │
-                               └─────────────────┘                               └─────────────────┘
-```
+## Why ClickHouse Matters
 
-1. **Meter data** flows from each home to SP Group's database (mocked in ClickHouse)
-2. **Smart appliance data** enriches the dataset with hourly, appliance-level granularity
-3. The enriched data powers **two product surfaces**
+ClickHouse is the evidence layer of Saivers. It gives the product a real analytical backbone instead of a lightweight demo database.
 
----
+It is used for:
 
-## What We're Building (24-Hour Prototype)
+- SP-style half-hourly household interval data
+- device telemetry and action logs
+- anomaly detection and baseline comparison
+- admin rollups, heatmaps, and neighbourhood summaries
+- weekly and monthly reporting
 
-### Admin Dashboard (Desktop-First)
+This matters to judges because it proves the AI is operating on structured data that can be queried, aggregated, and verified.
 
-For **SP Group leadership** and **operations teams** — a desktop-first view to monitor, analyze, and act on energy data.
+## Admin Investigation With AI and LibreChat
 
-| Feature | Description |
-|---------|-------------|
-| **Real-Time Regional Energy Monitoring** | Live view of energy consumption across regions |
-| **Energy Trend Analysis** | Historical trends and patterns at various granularities |
-| **AI-Powered Energy Analytics** | ClickHouse + LibreChat for natural language queries and investigation |
-| **Energy Anomaly Detection & Observability** | Detect unusual consumption patterns and outliers |
-| **Data Visualisation Dashboard** | Charts, maps, and KPIs for decision-making |
-| **Incident and Event Timeline** | Chronological view of notable events and anomalies |
-| **AI-Generated Operational Recommendations** | Actionable suggestions based on data analysis |
+One of the strongest demo moments is the admin experience.
 
----
+The admin side combines:
 
-### User App (Mobile-First)
+- ClickHouse-backed neighbourhood analytics
+- AI-generated dashboard and observability summaries
+- AI-generated operational recommendations
+- LibreChat-based natural-language investigation across energy data
 
-For **households** — a mobile-first experience that turns insights into action with minimal mental overhead.
+This gives Saivers a stronger system story than a user-only app. The same platform helps both sides:
 
-| Capability | Description |
-|------------|-------------|
-| **Suggestions & Nudges** | Personalized recommendations based on usage patterns |
-| **Automation (with approval)** | Help users automate configurations — e.g., turn off air conditioning between 2am–4am when it fits their schedule and saves cost |
-| **Reduced Mental Overhead** | We handle the configuration logic; users approve and benefit |
+- households get coaching and automation support
+- operators get investigation and decision support
 
-**Prototype scope:** 4 rooms (Master Room, Room 1, Room 2, Living Room), each with one air conditioner. Users can view their rooms, see connected appliances, and receive AI-driven suggestions for optimization.
+## Why This Matters To Judges
 
----
+### Impact
 
-## Tech Stack
+Saivers is built to create visible behaviour change, not just awareness. The product closes the loop from `data -> recommendation -> action -> measured result`.
 
-| Layer | Technology |
-|-------|------------|
-| **Database** | ClickHouse |
-| **Backend** | Python |
-| **Frontend** | Next.js (App Router), Tailwind CSS, deployed on Vercel |
-| **AI / Analytics** | LibreChat (admin), AI-driven nudges (user) |
+Benefits include:
 
----
+- lower household energy use
+- lower energy cost
+- reduced peak-hour demand
+- clearer understanding of what caused consumption
+
+### Relevance
+
+The solution is tightly aligned with the HackOMania SP Group challenge. It focuses on Singapore households, interval energy data, actionable AI, and real household behaviour change.
+
+### Solution Complexity
+
+The architecture uses AI where it makes sense and uses traditional analytics where they are more reliable:
+
+- ClickHouse for scale and evidence
+- deterministic backend logic for scoring and measurement
+- AI for explanation, coaching, summarisation, and investigation
+
+### Product Execution
+
+This is a working full-stack prototype, not a presentation deck. Judges can see real product surfaces, API routes, analytics, AI summaries, and a live device-control story.
+
+## Demo Story
+
+A judge can follow this flow:
+
+1. Household interval data is ingested.
+2. ClickHouse supports anomaly and baseline analysis.
+3. Saivers detects wasteful or unusual behaviour.
+4. The AI coach explains what happened and recommends an action.
+5. The user approves the action.
+6. The backend records projected savings and triggers device control.
+7. Habits, streaks, and monthly reports show whether behaviour improved.
+8. On the admin side, LibreChat and AI summaries help investigate households and neighbourhood patterns.
+
+The live demo setup also includes an actual Xiaomi humidifier so judges can see a real AI-to-device control moment rather than only a software-only flow.
 
 ## Repository Structure
 
-```
+```text
 saivers/
-├── frontend/                   # Next.js app
-│   ├── app/
-│   │   ├── page.tsx            # Root landing — choose Admin or User view
-│   │   ├── layout.tsx          # Root layout
-│   │   ├── globals.css
-│   │   ├── admin/              # Desktop-first Admin view
-│   │   │   ├── layout.tsx      # Admin nav (Dashboard, Settings)
-│   │   │   ├── page.tsx        # Admin dashboard (ClickHouse data)
-│   │   │   └── settings/
-│   │   │       └── page.tsx    # Admin settings subpage
-│   │   └── user/               # Mobile-first User view
-│   │       ├── layout.tsx      # User nav (Settings icon)
-│   │       ├── page.tsx        # Room list with air conditioners
-│   │       └── settings/
-│   │           └── page.tsx    # User settings subpage
-│   ├── package.json
-│   └── tsconfig.json
-├── backend/                    # Python + ClickHouse integration
+├── frontend/           # Next.js product UI for household and admin experiences
+├── backend/            # FastAPI + ClickHouse + AI services
+├── librechat-config/   # LibreChat configuration for admin investigation workflows
+├── xiaomi-purifier/    # Smart-device demo integration assets
+├── ac-simulator/       # Supporting local simulator for device scenarios
 └── README.md
 ```
 
-### Frontend Routes
+## Stack
 
-| Route | View | Description |
-|-------|------|-------------|
-| `/` | Root | Landing page — navigate to Admin or User |
-| `/admin` | Admin | Dashboard with ClickHouse data placeholders |
-| `/admin/settings` | Admin | Settings subpage (demo) |
-| `/user` | User | Room list — 4 rooms, each with an air conditioner |
-| `/user/settings` | User | Settings subpage (demo) |
-
-> **No auth required for the prototype.** The root landing page at `/` lets anyone navigate directly to either view.
-
----
+- Frontend: Next.js, Tailwind CSS
+- Backend: FastAPI, Python
+- Database: ClickHouse
+- AI: OpenAI models, LibreChat admin workflow
+- Device demo: Xiaomi humidifier and device-control flow
 
 ## Getting Started
 
@@ -154,25 +154,22 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The root page lets you navigate to the Admin or User view.
+Open `http://localhost:3000`.
 
 ### Backend
 
-```bash
-cd backend
-# setup instructions to be added
-```
+See [backend/README.md](/Users/shaunliew/Documents/saivers/backend/README.md) for the backend runbook, including:
 
----
+- environment setup
+- ClickHouse verification
+- table creation
+- demo seeding
+- API startup
+- smoke testing
 
-## Team Notes
+## Notes
 
-- **No sign-in system** for this prototype. Views are separated by route, not by auth.
-- **Admin view** is desktop-first — build and test at ≥1280px viewport.
-- **User view** is mobile-first — build and test at ≤390px viewport (iPhone-size).
-- When adding new pages, follow the existing route structure: `app/admin/[feature]/page.tsx` or `app/user/[feature]/page.tsx`.
-- Backend and frontend are fully decoupled. Frontend calls the backend via API routes or direct fetch — to be wired up as the prototype progresses.
-
----
-
-*Built for SP Group — AI for Actionable Energy Behavior Change*
+- This root README is submission-focused for judges and demo reviewers.
+- The backend contains the main analytics and AI workflow details.
+- The admin story is strongest when showing ClickHouse-backed investigation together with LibreChat.
+- The live hardware demo includes an actual Xiaomi humidifier.
