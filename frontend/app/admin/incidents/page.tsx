@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   getIncidents,
+  getIncidentsSummary,
   explainAnomaly,
   type IncidentEvent,
 } from "@/lib/admin-api";
@@ -38,6 +39,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 
 export default function IncidentsPage() {
   const [incidents, setIncidents] = useState<IncidentEvent[]>([]);
+  const [aiSummary, setAiSummary] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [explainingId, setExplainingId] = useState<string | null>(null);
   const [explanations, setExplanations] = useState<Record<string, string>>({});
@@ -65,10 +67,14 @@ export default function IncidentsPage() {
   };
 
   useEffect(() => {
-    getIncidents(7)
-      .then(setIncidents)
-      .catch(() => setIncidents([]))
-      .finally(() => setLoading(false));
+    Promise.all([
+      getIncidents(7).catch(() => []),
+      getIncidentsSummary(7).catch(() => ({ summary: "", ai_available: false })),
+    ]).then(([inc, summaryRes]) => {
+      setIncidents(inc);
+      setAiSummary(summaryRes?.summary ?? "");
+      setLoading(false);
+    });
   }, []);
 
   if (loading) {
@@ -94,6 +100,22 @@ export default function IncidentsPage() {
           events
         </p>
       </div>
+
+      {aiSummary && (
+        <div className="mb-6 rounded-2xl border border-[rgba(157,207,212,0.35)] bg-gradient-to-b from-[rgba(0,163,173,0.06)] to-[rgba(243,249,249,0.88)] p-4 shadow-[0_4px_16px_rgba(0,123,138,0.06)]">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(0,163,173,0.12)]">
+              <svg className="h-4 w-4 text-[#007B8A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">AI Briefing</p>
+              <p className="mt-1 text-sm leading-relaxed text-[#10363b]">{aiSummary}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="relative">
         {/* Timeline vertical line */}

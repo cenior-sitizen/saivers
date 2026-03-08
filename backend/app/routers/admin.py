@@ -480,6 +480,73 @@ def anomalies_summary(days: int = 7) -> dict:
     return _get_anomalies_summary(days)
 
 
+# --- AI Summary Endpoints ---
+
+
+@router.get("/dashboard-summary")
+def dashboard_summary() -> dict:
+    """
+    AI-generated 2-3 sentence summary of the admin dashboard.
+    Requires OPENAI_API_KEY. Returns empty string if AI unavailable.
+    """
+    try:
+        from app.services.ai_service import generate_dashboard_summary
+
+        if not os.getenv("OPENAI_API_KEY"):
+            return {"summary": "", "ai_available": False}
+        region = region_summary()
+        grid = grid_contribution()
+        anomalies = _get_anomalies_summary(7)
+        summary = generate_dashboard_summary(
+            region.model_dump(),
+            grid.model_dump(),
+            anomalies,
+        )
+        return {"summary": summary or "", "ai_available": True}
+    except Exception:
+        return {"summary": "", "ai_available": False}
+
+
+@router.get("/observability-summary")
+def observability_summary() -> dict:
+    """
+    AI-generated aggregate health summary for observability dashboard.
+    Requires OPENAI_API_KEY. Returns empty string if AI unavailable.
+    """
+    try:
+        from app.services.ai_service import generate_observability_summary
+
+        if not os.getenv("OPENAI_API_KEY"):
+            return {"summary": "", "ai_available": False}
+        anomalies = _get_anomalies_summary(7)
+        households = households_summary()
+        summary = generate_observability_summary(
+            anomalies,
+            [h.model_dump() for h in households],
+        )
+        return {"summary": summary or "", "ai_available": True}
+    except Exception:
+        return {"summary": "", "ai_available": False}
+
+
+@router.get("/incidents-summary")
+def incidents_summary(days: int = 7) -> dict:
+    """
+    AI-generated batch briefing of all incidents for the last N days.
+    Requires OPENAI_API_KEY. Returns empty string if AI unavailable.
+    """
+    try:
+        from app.services.ai_service import generate_incidents_summary
+
+        if not os.getenv("OPENAI_API_KEY"):
+            return {"summary": "", "ai_available": False}
+        events = get_incidents(days)
+        summary = generate_incidents_summary([e.model_dump() for e in events])
+        return {"summary": summary or "", "ai_available": True}
+    except Exception:
+        return {"summary": "", "ai_available": False}
+
+
 class ExplainAnomalyRequest(BaseModel):
     household_id: int
     ts: str

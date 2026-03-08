@@ -11,7 +11,6 @@ const NAV_LINKS = [
   { href: "/admin/incidents", label: "Incidents" },
   { href: "/admin/investigation", label: "AI Assistant" },
   { href: "/admin/recommendations", label: "Recommendations" },
-  { href: "/admin/settings", label: "Settings" },
 ];
 
 export default function AdminLayout({
