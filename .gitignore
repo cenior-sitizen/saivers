@@ -12,3 +12,4 @@ backend/*.pyc
 
 # LibreChat (third-party, clone separately - use librechat-config/ for setup)
 LibreChat/
+*.pyc

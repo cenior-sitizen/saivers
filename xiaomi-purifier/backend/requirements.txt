@@ -1,0 +1,10 @@
+# Xiaomi Purifier backend — use `pip install -r requirements.txt` or `uv sync`
+# python-miio from GitHub for xiaomi.airp.cpa4 MIoT support (see issue #1869)
+
+fastapi>=0.135.1
+httpx>=0.28.1
+python-dotenv>=1.2.2
+uvicorn[standard]>=0.41.0
+
+# MIoT support for xiaomi.airp.cpa4 — install from GitHub master
+git+https://github.com/rytilahti/python-miio.git

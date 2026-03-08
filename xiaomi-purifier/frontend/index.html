@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xiaomi Purifier Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 420px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #f5f5f5;
+    }
+    h1 { font-size: 1.25rem; color: #333; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .row:last-child { margin-bottom: 0; }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-on { background: #22c55e; color: white; }
+    .btn-off { background: #64748b; color: white; }
+    .btn-on:hover { background: #16a34a; }
+    .btn-off:hover { background: #475569; }
+    .result {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+    }
+    .result.success { background: #dcfce7; color: #166534; }
+    .result.error { background: #fee2e2; color: #991b1b; }
+    .result.pending { background: #f1f5f9; color: #475569; }
+  </style>
+</head>
+<body>
+  <h1>Xiaomi Purifier Test</h1>
+
+  <div class="card">
+    <p style="margin:0 0 0.75rem; font-size:0.9rem; color:#666;">API base URL</p>
+    <input type="text" id="apiUrl" value="http://localhost:8002" placeholder="http://localhost:8002" />
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button class="btn-on" id="btnOn">Turn On</button>
+      <button class="btn-off" id="btnOff">Turn Off</button>
+    </div>
+    <div id="result" class="result pending">Ready. Click a button to test.</div>
+  </div>
+
+  <script>
+    const apiUrl = document.getElementById('apiUrl');
+    const btnOn = document.getElementById('btnOn');
+    const btnOff = document.getElementById('btnOff');
+    const result = document.getElementById('result');
+
+    function setResult(data, isError) {
+      result.textContent = JSON.stringify(data, null, 2);
+      result.className = 'result ' + (isError ? 'error' : 'success');
+    }
+
+    function setPending() {
+      result.textContent = 'Sending...';
+      result.className = 'result pending';
+    }
+
+    async function call(action) {
+      const base = apiUrl.value.replace(/\/$/, '');
+      const url = `${base}/api/test/xiaomi/purifier/${action}`;
+      setPending();
+      try {
+        const res = await fetch(url, { method: 'POST' });
+        const data = await res.json();
+        setResult(data, !data.success);
+      } catch (e) {
+        setResult({ error: e.message, hint: 'Is the backend running on ' + base + '?' }, true);
+      }
+    }
+
+    btnOn.onclick = () => call('on');
+    btnOff.onclick = () => call('off');
+  </script>
+</body>
+</html>

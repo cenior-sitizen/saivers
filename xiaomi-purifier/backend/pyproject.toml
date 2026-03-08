@@ -1,0 +1,13 @@
+[project]
+name = "xiaomi-purifier-backend"
+version = "0.1.0"
+description = "Standalone Xiaomi Air Purifier test API"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "fastapi>=0.135.1",
+    "httpx>=0.28.1",
+    "python-dotenv>=1.2.2",
+    # xiaomi.airp.cpa4 uses MIoT; GitHub #1869: install from master for best support
+    "python-miio @ git+https://github.com/rytilahti/python-miio.git",
+    "uvicorn[standard]>=0.41.0",
+]
