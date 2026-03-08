@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   getAnomaliesSummary,
   getHouseholds,
+  getObservabilitySummary,
   type AnomaliesSummary,
   type HouseholdSummary,
 } from "@/lib/admin-api";
@@ -12,6 +13,7 @@ import { StatCard } from "@/components/admin/StatCard";
 export default function ObservabilityPage() {
   const [anomalies, setAnomalies] = useState<AnomaliesSummary | null>(null);
   const [households, setHouseholds] = useState<HouseholdSummary[]>([]);
+  const [aiSummary, setAiSummary] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,9 +21,11 @@ export default function ObservabilityPage() {
       Promise.all([
         getAnomaliesSummary(7).catch(() => null),
         getHouseholds().catch(() => []),
-      ]).then(([a, h]) => {
+        getObservabilitySummary().catch(() => ({ summary: "", ai_available: false })),
+      ]).then(([a, h, summaryRes]) => {
         setAnomalies(a ?? null);
         setHouseholds(h ?? []);
+        setAiSummary(summaryRes?.summary ?? "");
         setLoading(false);
       });
     };
@@ -78,6 +82,22 @@ export default function ObservabilityPage() {
           accent={maxScore > 3 ? "amber" : "zinc"}
         />
       </div>
+
+      {aiSummary && (
+        <div className="mt-6 rounded-2xl border border-[rgba(157,207,212,0.35)] bg-gradient-to-b from-[rgba(0,163,173,0.06)] to-[rgba(243,249,249,0.88)] p-4 shadow-[0_4px_16px_rgba(0,123,138,0.06)]">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(0,163,173,0.12)]">
+              <svg className="h-4 w-4 text-[#007B8A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#6f8c91]">AI Health Summary</p>
+              <p className="mt-1 text-sm leading-relaxed text-[#10363b]">{aiSummary}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-[rgba(157,207,212,0.35)] bg-gradient-to-b from-white/95 to-[rgba(243,249,249,0.88)] shadow-[0_4px_16px_rgba(0,123,138,0.06)]">
         <div className="border-b border-[rgba(157,207,212,0.25)] px-6 py-4">

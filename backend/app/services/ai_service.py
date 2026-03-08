@@ -162,6 +162,127 @@ def generate_incident_summary(
         return f"Excess {excess_kwh:.2f} kWh above baseline (score {anomaly_score:.1f})"
 
 
+def generate_dashboard_summary(
+    region: dict,
+    grid: dict,
+    anomalies: dict,
+) -> str:
+    """
+    Generate a 2-3 sentence AI summary of the admin dashboard.
+    Input: region_summary, grid_contribution, anomalies_summary as dicts.
+    """
+    try:
+        client = get_openai_client()
+        reduction = grid.get("neighborhood_total_reduction_pct", 0)
+        households = grid.get("households", [])[:5]
+        above = [h for h in households if h.get("reduction_pct", 0) < 0]
+        below = [h for h in households if h.get("reduction_pct", 0) >= 0]
+        context = (
+            f"Punggol neighbourhood: {region.get('household_count', 0)} households, "
+            f"{region.get('total_kwh', 0):.1f} kWh (7d), S${region.get('total_cost_sgd', 0):.2f}, "
+            f"peak reduction {reduction:.1f}% vs 4-week baseline.\n"
+            f"Anomalies (7d): {anomalies.get('total_anomalies', 0)} total, "
+            f"{anomalies.get('affected_households', 0)} affected, max score {anomalies.get('max_score', 0):.1f}.\n"
+        )
+        if above:
+            context += f"Above baseline: HH {', '.join(str(h['household_id']) for h in above)}.\n"
+        if below:
+            context += f"Below baseline (saving): HH {', '.join(str(h['household_id']) for h in below[:3])}."
+        prompt = (
+            f"Summarize this energy ops dashboard in 2-3 concise sentences for a grid operator.\n"
+            f"Data:\n{context}\n\n"
+            "Highlight: peak reduction trend, any households of concern, anomaly status. "
+            "Be specific with household IDs. No markdown."
+        )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.3,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
+        return ""
+
+
+def generate_observability_summary(
+    anomalies: dict,
+    households: list[dict],
+) -> str:
+    """
+    Generate an aggregate AI health summary for the observability dashboard.
+    Input: anomalies_summary dict, list of HouseholdSummary-like dicts.
+    """
+    try:
+        client = get_openai_client()
+        affected = [h for h in households if h.get("anomaly_count", 0) > 0]
+        context = (
+            f"Last 7 days: {anomalies.get('total_anomalies', 0)} anomalies, "
+            f"{anomalies.get('affected_households', 0)} affected households, "
+            f"max score {anomalies.get('max_score', 0):.1f}.\n"
+        )
+        if affected:
+            context += "Households with anomalies today: " + ", ".join(
+                f"HH{h['household_id']} ({h.get('name', '?')}): {h['anomaly_count']} events"
+                for h in affected[:5]
+            )
+        else:
+            context += "No households with anomalies today."
+        prompt = (
+            f"Summarize this energy telemetry health in 2-3 sentences for an ops team.\n"
+            f"Data:\n{context}\n\n"
+            "Identify likely root causes (AC usage, peak hours, meter sync) and top recommended action. "
+            "Be concise. No markdown."
+        )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.3,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
+        return ""
+
+
+def generate_incidents_summary(incidents: list[dict]) -> str:
+    """
+    Generate a batch briefing summary of all incidents for the last N days.
+    Input: list of incident dicts with household_id, ts, severity, description, excess_kwh, anomaly_score.
+    """
+    try:
+        client = get_openai_client()
+        if not incidents:
+            return "No incidents in the last 7 days. Telemetry is healthy."
+        by_hh = {}
+        for inc in incidents[:20]:
+            hid = inc.get("household_id") or 0
+            by_hh[hid] = by_hh.get(hid, 0) + 1
+        context = (
+            f"{len(incidents)} incidents in last 7 days. "
+            f"By household: " + ", ".join(f"HH{k}: {v} events" for k, v in sorted(by_hh.items())[:5]) + ".\n"
+            f"Sample: " + "; ".join(
+                f"HH{inc.get('household_id')} @ {str(inc.get('ts', ''))[:16]} — {inc.get('severity', '?')}, "
+                f"excess {inc.get('excess_kwh', 0):.2f} kWh"
+                for inc in incidents[:5]
+            )
+        )
+        prompt = (
+            f"Summarize these energy anomaly incidents in 2-3 sentences for an ops briefing.\n"
+            f"Data:\n{context}\n\n"
+            "Highlight: which households need attention, common patterns, suggested next step. No markdown."
+        )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.3,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
+        return ""
+
+
 def explain_anomaly(
     household_id: int,
     ts: str,
