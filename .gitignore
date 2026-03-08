@@ -13,3 +13,5 @@ backend/*.pyc
 # LibreChat (third-party, clone separately - use librechat-config/ for setup)
 LibreChat/
 *.pyc
+xiaomi-purifier/backend/.env
+xiaomi-purifier/backend/Xiaomi-cloud-tokens-extractor/
