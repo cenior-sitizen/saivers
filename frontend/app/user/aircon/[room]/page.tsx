@@ -4,41 +4,24 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { CollapsibleAppliance } from "@/components/CollapsibleAppliance";
-import { StatusSummaryCard } from "@/components/StatusSummaryCard";
-import {
-  TimeRangeToggle,
-  type TimeRangeOption,
-} from "@/components/TimeRangeToggle";
+import { TimeRangeToggle, type TimeRangeOption } from "@/components/TimeRangeToggle";
 import { UsageBehaviourChart } from "@/components/UsageBehaviourChart";
-import { SpikeDetailCard } from "@/components/SpikeDetailCard";
-import { ComparisonInsightCard } from "@/components/ComparisonInsightCard";
-import { BehaviourInsightCard } from "@/components/BehaviourInsightCard";
-import { BehaviourSummaryCard } from "@/components/BehaviourSummaryCard";
 import { useHousehold } from "@/context/HouseholdContext";
 import {
   roomDataMap,
   usageTimeSeriesDay,
   usageTimeSeriesWeek,
-  usageTimeSeriesMonth,
-  behaviourSummariesByAppliance,
-  spikeEventsByAppliance,
-  comparisonDataMap,
   behaviourInsightsMap,
+  spikeEventsByAppliance,
 } from "./mockData";
+
+const VALID_ROOMS = ["master-room", "room-1", "room-2", "living-room"];
 
 interface ApprovedInsight {
   insight_id: string;
   notification_title: string;
-  notification_body: string;
-  week_start: string;
   status: string;
-  recommendation: {
-    action: string;
-    start_time?: string;
-    end_time?: string;
-    temp_c?: number;
-  };
+  recommendation: { action: string; start_time?: string; end_time?: string; temp_c?: number };
 }
 
 function ApprovedInsightBanner({ householdId }: { householdId: number }) {
@@ -53,9 +36,7 @@ function ApprovedInsightBanner({ householdId }: { householdId: number }) {
       .then((data: ApprovedInsight[]) => {
         if (!Array.isArray(data)) return;
         const approved = data.find(
-          (i) =>
-            i.status === "approved" &&
-            i.recommendation?.action === "ac_schedule",
+          (i) => i.status === "approved" && i.recommendation?.action === "ac_schedule"
         );
         setInsight(approved ?? null);
       })
@@ -63,7 +44,6 @@ function ApprovedInsightBanner({ householdId }: { householdId: number }) {
   }, [householdId]);
 
   if (!insight || dismissed) return null;
-
   const { start_time, end_time, temp_c } = insight.recommendation;
 
   return (
@@ -71,51 +51,22 @@ function ApprovedInsightBanner({ householdId }: { householdId: number }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2.5">
           <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-            <svg
-              className="h-4 w-4 text-emerald-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
+            <svg className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-emerald-800">
-              AI Recommendation Applied
-            </p>
+            <p className="text-sm font-semibold text-emerald-800">Recommendation applied</p>
             {start_time && (
               <p className="mt-0.5 text-xs text-emerald-700">
                 AC scheduled {start_time}–{end_time} at {temp_c}°C
               </p>
             )}
-            <p className="mt-1 text-[11px] text-emerald-600">
-              {insight.notification_title}
-            </p>
           </div>
         </div>
-        <button
-          onClick={() => setDismissed(true)}
-          className="shrink-0 text-emerald-400 hover:text-emerald-600"
-          aria-label="Dismiss"
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
+        <button onClick={() => setDismissed(true)} className="shrink-0 text-emerald-400 hover:text-emerald-600">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -123,530 +74,216 @@ function ApprovedInsightBanner({ householdId }: { householdId: number }) {
   );
 }
 
-// Maps room URL slug → device_id in ac_readings / device_registry
-const ROOM_SLUG_TO_DEVICE_ID: Record<string, string> = {
-  "living-room": "ac-living-room",
-  "master-room": "ac-master-room",
-  "room-1": "ac-room-1",
-  "room-2": "ac-room-2",
-};
-
-const VALID_ROOMS = ["master-room", "room-1", "room-2", "living-room"];
-
 export default function RoomAirconPage() {
   const params = useParams();
   const roomSlug = params.room as string;
   const { householdId } = useHousehold();
 
   const [timeRange, setTimeRange] = useState<TimeRangeOption>("week");
-  const [deviceRegistry, setDeviceRegistry] = useState<Record<
-    string,
-    { room: string; brand: string; modelName: string; deviceType: string }
-  > | null>(null);
-  const [aiInsights, setAiInsights] = useState<string[]>([]);
-  const [aiInsightsLoading, setAiInsightsLoading] = useState(false);
   const [apiData, setApiData] = useState<{
-    todayLabel?: string;
-    today?: {
-      energyKwh: number;
-      runtimeHours: number;
-      status: string;
-      temperature: number;
-    };
-    charts?: {
-      day: { time: string; value: number; isOn: boolean }[];
-      week: { time: string; value: number; isOn: boolean }[];
-      month: { time: string; value: number; isOn: boolean }[];
-    };
-    behaviourSummary?: {
-      avgDailyKwh: number;
-      avgDailyRuntimeH: number;
-      highestDay: string;
-      peakHourRange: string;
-      highestWeekday: string;
-    } | null;
-    spikeEvents?: { datetimeLabel: string; kwh: number; pctAboveAvg: number }[];
-    comparisons?: {
-      vsLastWeek: {
-        thisWeekKwh: number;
-        lastWeekKwh: number;
-        percentChange: number;
-      };
-      vsLastMonth: {
-        thisWeekKwh: number;
-        sameWeekLastMonthKwh: number;
-        percentChange: number;
-      };
-      vsDistrict?: {
-        yourWeekKwh: number;
-        districtPerHomeWeekKwh: number;
-        sgNationalPerHomeWeekKwh: number;
-        percentVsDistrict: number;
-        percentVsSingapore: number;
-      };
-    };
-    vsLastWeek?: {
-      thisWeekKwh: number;
-      lastWeekKwh: number;
-      percentChange: number;
-    };
-    spEnergy?: {
-      thisWeekKwh: number;
-      lastWeekKwh: number;
-      thisWeekCostSgd: number;
-      thisWeekCarbonKg: number;
-      vsLastWeekPct: number;
-    };
+    today?: { energyKwh: number; runtimeHours: number; status: string; temperature: number };
+    charts?: { day: { time: string; value: number; isOn: boolean }[]; week: { time: string; value: number; isOn: boolean }[] };
+    behaviourSummary?: { avgDailyKwh: number; avgDailyRuntimeH: number; peakHourRange: string; highestWeekday: string } | null;
+    spEnergy?: { thisWeekKwh: number; lastWeekKwh: number; thisWeekCostSgd: number; vsLastWeekPct: number };
   } | null>(null);
+  const [aiInsights, setAiInsights] = useState<string[]>([]);
 
-  // Fetch household AC data, device registry, and AI insights in parallel
   useEffect(() => {
     if (!roomSlug || !VALID_ROOMS.includes(roomSlug)) return;
     fetch(`/api/aircon/household/${householdId}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => data && setApiData(data))
+      .then((data) => {
+        if (!data) return;
+        setApiData(data);
+      })
       .catch(() => {});
-    fetch(`/api/devices/${householdId}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => data?.byDeviceId && setDeviceRegistry(data.byDeviceId))
-      .catch(() => {});
-    setAiInsightsLoading(true);
     fetch(`/api/aircon/behaviour-insights/${householdId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (Array.isArray(data?.insights) && data.insights.length > 0) {
-          setAiInsights(data.insights);
-        }
+        if (Array.isArray(data?.insights)) setAiInsights(data.insights);
       })
-      .catch(() => {})
-      .finally(() => setAiInsightsLoading(false));
+      .catch(() => {});
   }, [roomSlug, householdId]);
 
   if (!roomSlug || !VALID_ROOMS.includes(roomSlug)) {
     return (
       <div className="px-4 py-6">
         <p className="text-[#4d6b70]">Room not found.</p>
-        <Link href="/user" className="mt-4 text-[#86CCD2] underline">
-          Back to My Home
-        </Link>
+        <Link href="/user" className="mt-4 text-[#86CCD2] underline">Back to My Home</Link>
       </div>
     );
   }
 
   const room = roomDataMap[roomSlug];
-  const baseComparison = comparisonDataMap[roomSlug];
-
-  // Resolve real AC brand/model from device registry for this room
-  const acDeviceId = ROOM_SLUG_TO_DEVICE_ID[roomSlug];
-  const acDeviceInfo = acDeviceId ? deviceRegistry?.[acDeviceId] : null;
-  const acDisplayName = acDeviceInfo
-    ? `${acDeviceInfo.brand} Air Conditioner`
-    : null;
-
-  // Build comparison from DB data when available
-  const dbVsLastWeek = apiData?.comparisons?.vsLastWeek;
-  const dbVsLastMonth = apiData?.comparisons?.vsLastMonth;
-  const comparisonData = {
-    ...baseComparison,
-    vsLastWeek: dbVsLastWeek
-      ? {
-          label: `Your usage is ${dbVsLastWeek.percentChange >= 0 ? "+" : ""}${dbVsLastWeek.percentChange}% ${dbVsLastWeek.percentChange >= 0 ? "higher" : "lower"} than last week`,
-          value: `${dbVsLastWeek.percentChange >= 0 ? "+" : ""}${dbVsLastWeek.percentChange}%`,
-          isPositive: dbVsLastWeek.percentChange <= 0,
-        }
-      : baseComparison.vsLastWeek,
-    vsLastMonth: dbVsLastMonth
-      ? {
-          label: `Your usage is ${dbVsLastMonth.percentChange >= 0 ? "+" : ""}${dbVsLastMonth.percentChange}% vs same week last month`,
-          value: `${dbVsLastMonth.percentChange >= 0 ? "+" : ""}${dbVsLastMonth.percentChange}%`,
-          isPositive: dbVsLastMonth.percentChange <= 0,
-        }
-      : baseComparison.vsLastMonth,
-  };
-  const behaviourInsights =
+  const spEnergy = apiData?.spEnergy;
+  const today = apiData?.today;
+  const beh = apiData?.behaviourSummary;
+  const spikeEvents = spikeEventsByAppliance[roomSlug]?.ac ?? [];
+  const insights =
     aiInsights.length > 0
-      ? aiInsights.map((text, i) => ({ id: String(i), text }))
-      : (behaviourInsightsMap[roomSlug] ?? []);
-
-  const dbDistrict = apiData?.comparisons?.vsDistrict;
-
-  // Compute efficiency level from avg daily AC kWh
-  const avgDailyKwh = apiData?.behaviourSummary?.avgDailyKwh;
-  const efficiencyLevel =
-    avgDailyKwh == null
-      ? undefined
-      : avgDailyKwh < 3
-        ? ("efficient" as const)
-        : avgDailyKwh < 6
-          ? ("moderate" as const)
-          : ("high" as const);
-
-  // Singapore SP Group residential tariff (S$/kWh)
-  const TARIFF_SGD_PER_KWH = 0.292;
+      ? aiInsights
+      : (behaviourInsightsMap[roomSlug] ?? []).map((i) => i.text);
 
   const chartData =
     timeRange === "day"
-      ? apiData?.charts?.day?.length
-        ? apiData.charts.day
-        : usageTimeSeriesDay
-      : timeRange === "week"
-        ? apiData?.charts?.week?.length
-          ? apiData.charts.week
-          : usageTimeSeriesWeek
-        : apiData?.charts?.month?.length
-          ? apiData.charts.month
-          : usageTimeSeriesMonth;
+      ? (apiData?.charts?.day?.length ? apiData.charts.day : usageTimeSeriesDay)
+      : (apiData?.charts?.week?.length ? apiData.charts.week : usageTimeSeriesWeek);
 
-  const chartTitle =
-    timeRange === "day"
-      ? `Energy usage — ${apiData?.todayLabel ?? "Today"}`
-      : "Energy usage: You vs 28 districts vs Singapore";
+  const weekCost = spEnergy ? spEnergy.thisWeekCostSgd : null;
+  const vsLastWeek = spEnergy?.vsLastWeekPct ?? null;
 
   return (
-    <div className="min-h-screen px-4 pb-20 sm:mx-auto sm:max-w-md sm:px-0">
+    <div className="min-h-screen px-4 pb-28 pt-2 sm:mx-auto sm:max-w-md sm:px-0">
       {/* Header */}
-      <div className="mb-6 pt-2">
-        <Link
-          href="/user"
-          className="mb-2 inline-flex items-center gap-1 text-sm text-[#666666] hover:text-[#10363b]"
-        >
-          ← Back to My Home
+      <div className="mb-5">
+        <Link href="/user" className="mb-2 inline-flex items-center gap-1 text-sm text-[#666666] hover:text-[#10363b]">
+          ← My Home
         </Link>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#10363b]">{room.name}</h1>
-            {acDeviceInfo ? (
-              <p className="mt-1 text-sm text-[#4d6b70]">
-                {acDeviceInfo.brand}{" "}
-                <span className="text-[#6f8c91]">{acDeviceInfo.modelName}</span>
-              </p>
-            ) : (
-              <p className="mt-1 text-sm text-[#666666]">
-                {room.appliances.length} smart appliance
-                {room.appliances.length > 1 ? "s" : ""}
-              </p>
-            )}
-          </div>
-          <Image
-            src="/midea-aircon.png"
-            alt="Air conditioner"
-            width={80}
-            height={60}
-            className="shrink-0 object-contain"
-          />
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-[#10363b]">{room.name}</h1>
+          <Image src="/midea-aircon.png" alt="Air conditioner" width={64} height={48} className="object-contain" />
         </div>
       </div>
 
       {/* Approved insight banner */}
       <ApprovedInsightBanner householdId={householdId} />
 
-      {/* Live weekly energy summary — data changes per persona */}
-      {apiData?.spEnergy && (
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-3 py-3 shadow-[0_8px_24px_rgba(0,123,138,0.07)]">
-            <p className="text-[10px] font-medium text-[#6f8c91]">This Week</p>
-            <p className="mt-0.5 text-lg font-bold text-[#10363b]">
-              {apiData.spEnergy.thisWeekKwh}{" "}
-              <span className="text-xs font-normal text-[#6f8c91]">kWh</span>
-            </p>
+      {/* ── Air Conditioner ── */}
+      <section className="mb-5">
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#007B8A]">
+            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" />
+            </svg>
           </div>
-          <div className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-3 py-3 shadow-[0_8px_24px_rgba(0,123,138,0.07)]">
-            <p className="text-[10px] font-medium text-[#6f8c91]">
-              Weekly Cost
-            </p>
-            <p className="mt-0.5 text-lg font-bold text-[#10363b]">
-              S${apiData.spEnergy.thisWeekCostSgd.toFixed(0)}
-            </p>
+          <h2 className="text-sm font-semibold text-[#10363b]">Air Conditioner</h2>
+          {today && (
+            <span className={`ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              today.status === "On" ? "bg-emerald-50 text-emerald-700" : "bg-[rgba(207,228,230,0.40)] text-[#6f8c91]"
+            }`}>
+              {today.status}
+            </span>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] shadow-[0_8px_24px_rgba(0,123,138,0.07)]">
+          {/* Cost + trend */}
+          <div className="px-5 pb-4 pt-5">
+            <p className="text-xs font-medium text-[#6f8c91]">This week&apos;s cost</p>
+            <div className="mt-1 flex items-end gap-3">
+              <p className="text-3xl font-bold text-[#10363b]">
+                {weekCost != null ? `S$${weekCost.toFixed(2)}` : "—"}
+              </p>
+              {vsLastWeek != null && (
+                <span className={`mb-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  vsLastWeek <= 0 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                }`}>
+                  {vsLastWeek <= 0 ? "↓" : "↑"} {Math.abs(vsLastWeek)}% vs last week
+                </span>
+              )}
+            </div>
+
+            {/* Habit pills */}
+            {(today || beh) && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {today && (
+                  <span className="rounded-full border border-[rgba(157,207,212,0.40)] bg-white px-3 py-1 text-xs text-[#4d6b70]">
+                    {today.temperature}°C · {today.runtimeHours}h today
+                  </span>
+                )}
+                {beh?.peakHourRange && (
+                  <span className="rounded-full border border-[rgba(157,207,212,0.40)] bg-white px-3 py-1 text-xs text-[#4d6b70]">
+                    Busiest {beh.peakHourRange}
+                  </span>
+                )}
+                {beh?.highestWeekday && (
+                  <span className="rounded-full border border-[rgba(157,207,212,0.40)] bg-white px-3 py-1 text-xs text-[#4d6b70]">
+                    Highest on {beh.highestWeekday}s
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-          <div
-            className={`rounded-2xl border px-3 py-3 shadow-sm ${
-              apiData.spEnergy.vsLastWeekPct > 0
-                ? "border-red-200 bg-red-50"
-                : "border-emerald-200 bg-emerald-50"
-            }`}
-          >
-            <p className="text-[10px] font-medium text-[#6f8c91]">
-              vs Last Week
-            </p>
-            <p
-              className={`mt-0.5 text-lg font-bold ${
-                apiData.spEnergy.vsLastWeekPct > 0
-                  ? "text-red-600"
-                  : "text-emerald-600"
-              }`}
-            >
-              {apiData.spEnergy.vsLastWeekPct > 0 ? "+" : ""}
-              {apiData.spEnergy.vsLastWeekPct}%
-            </p>
+
+          {/* Chart */}
+          <div className="border-t border-[rgba(157,207,212,0.20)] px-4 pb-4 pt-3">
+            <div className="mb-3">
+              <TimeRangeToggle
+                value={timeRange}
+                onChange={setTimeRange}
+              />
+            </div>
+            <UsageBehaviourChart data={chartData} />
           </div>
         </div>
-      )}
+      </section>
 
-      {/* Expandable appliance sections */}
-      <div className="space-y-3">
-        {room.appliances.map((appliance) => {
-          const behaviourSummary =
-            behaviourSummariesByAppliance[roomSlug]?.[appliance.id];
-          const spikeEvents =
-            spikeEventsByAppliance[roomSlug]?.[appliance.id] ?? [];
-          const applianceData =
-            apiData?.today && appliance.id === "ac"
-              ? {
-                  ...appliance,
-                  status: apiData.today.status as "On" | "Off",
-                  temperature: apiData.today.temperature,
-                  runtimeTodayHours: apiData.today.runtimeHours,
-                  energyTodayKwh: apiData.today.energyKwh,
-                }
-              : appliance;
-
-          // For the primary AC, substitute the real brand name from DB
-          const displayName =
-            appliance.id === "ac" && acDisplayName
-              ? acDisplayName
-              : appliance.name;
-
-          return (
-            <CollapsibleAppliance
-              key={appliance.id}
-              id={appliance.id}
-              name={displayName}
-              image={appliance.image}
-              status={applianceData.status}
-              defaultOpen={appliance.id === "ac"}
-              efficiencyLevel={
-                appliance.id === "ac" ? efficiencyLevel : undefined
-              }
-            >
-              {/* Unified card: chart + insights together */}
-              <div className="space-y-4">
-                <StatusSummaryCard
-                  status={applianceData.status}
-                  temperature={applianceData.temperature}
-                  runtimeTodayHours={applianceData.runtimeTodayHours}
-                  energyTodayKwh={applianceData.energyTodayKwh}
-                />
-
-                {/* View by - inside each appliance */}
-                <div>
-                  <p className="mb-2 text-sm font-medium text-[#10363b]">
-                    View by
+      {/* ── Tips ── */}
+      {(spikeEvents.length > 0 || insights.length > 0) && (
+        <section className="mb-5">
+          <h2 className="mb-3 text-sm font-semibold text-[#10363b]">Tips for this room</h2>
+          <div className="space-y-2">
+            {spikeEvents.slice(0, 2).map((spike, i) => (
+              <div key={i} className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                    <svg className="h-3.5 w-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-[#4d6b70]">
+                    {spike.explanation ?? spike.cause}
                   </p>
-                  <TimeRangeToggle value={timeRange} onChange={setTimeRange} />
-                </div>
-
-                {/* Peak hour badge — shown when behaviourSummary available */}
-                {apiData?.behaviourSummary?.peakHourRange &&
-                  timeRange !== "day" && (
-                    <div className="flex items-center gap-2 rounded-xl border border-[rgba(157,207,212,0.35)] bg-[rgba(0,163,173,0.06)] px-3 py-2">
-                      <span className="text-base">⚡</span>
-                      <div>
-                        <p className="text-xs font-semibold text-[#10363b]">
-                          Peak usage: {apiData.behaviourSummary.peakHourRange}
-                        </p>
-                        <p className="text-[10px] text-[#6f8c91]">
-                          Highest on {apiData.behaviourSummary.highestWeekday}s
-                          — consider pre-cooling 30 min earlier
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                {/* Chart with actual dates from DB */}
-                <UsageBehaviourChart data={chartData} title={chartTitle} />
-
-                {/* Behaviour summary — DB data when available, else mock */}
-                {(apiData?.behaviourSummary || behaviourSummary) && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <BehaviourSummaryCard
-                      label="Peak usage time"
-                      value={
-                        apiData?.behaviourSummary?.peakHourRange ??
-                        behaviourSummary?.mostCommonUsageTime ??
-                        "—"
-                      }
-                    />
-                    <BehaviourSummaryCard
-                      label="Avg daily runtime"
-                      value={
-                        apiData?.behaviourSummary
-                          ? `${apiData.behaviourSummary.avgDailyRuntimeH}h/day`
-                          : (behaviourSummary?.avgDailyRuntime ?? "—")
-                      }
-                    />
-                    <BehaviourSummaryCard
-                      label="Highest usage day"
-                      value={
-                        apiData?.behaviourSummary?.highestWeekday ??
-                        behaviourSummary?.highestUsageDay ??
-                        "—"
-                      }
-                    />
-                    <BehaviourSummaryCard
-                      label="Avg daily kWh"
-                      value={
-                        apiData?.behaviourSummary
-                          ? `${apiData.behaviourSummary.avgDailyKwh} kWh`
-                          : (behaviourSummary?.longestRuntimePeriod ?? "—")
-                      }
-                    />
-                  </div>
-                )}
-
-                {/* Spike + Comparison + Insights - grouped together */}
-                <div className="space-y-3 rounded-xl border border-[#86CCD2]/20 /50 p-3">
-                  {/* What drives your cost callout */}
-                  {apiData?.behaviourSummary && (
-                    <div className="rounded-xl border border-[rgba(157,207,212,0.30)] bg-gradient-to-b from-[rgba(255,255,255,0.9)] to-[rgba(243,249,249,0.8)] px-4 py-3">
-                      <p className="mb-2 text-xs font-semibold text-[#10363b]">
-                        What drives your AC cost this week
-                      </p>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#6f8c91]">
-                            Avg daily consumption
-                          </span>
-                          <span className="text-xs font-semibold text-[#10363b]">
-                            {apiData.behaviourSummary.avgDailyKwh} kWh{" "}
-                            <span className="font-normal text-[#6f8c91]">
-                              ≈ S$
-                              {(
-                                apiData.behaviourSummary.avgDailyKwh *
-                                TARIFF_SGD_PER_KWH
-                              ).toFixed(2)}
-                              /day
-                            </span>
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#6f8c91]">
-                            Avg daily runtime
-                          </span>
-                          <span className="text-xs font-semibold text-[#10363b]">
-                            {apiData.behaviourSummary.avgDailyRuntimeH}h/day
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#6f8c91]">
-                            Busiest time
-                          </span>
-                          <span className="text-xs font-semibold text-[#10363b]">
-                            {apiData.behaviourSummary.peakHourRange}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#6f8c91]">
-                            Highest usage day
-                          </span>
-                          <span className="text-xs font-semibold text-[#10363b]">
-                            {apiData.behaviourSummary.highestWeekday}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Spike events from DB */}
-                  {(apiData?.spikeEvents ?? spikeEvents).length > 0 && (
-                    <div>
-                      <p className="mb-2 text-xs font-semibold text-[#10363b]">
-                        Spike explanation
-                      </p>
-                      <div className="space-y-2">
-                        {apiData?.spikeEvents?.length
-                          ? apiData.spikeEvents.map((spike, i) => (
-                              <SpikeDetailCard
-                                key={i}
-                                dateTime={spike.datetimeLabel}
-                                room={room.name}
-                                appliance="Air Conditioner"
-                                magnitude={`+${spike.pctAboveAvg}%`}
-                                cause={`${spike.kwh} kWh — ${spike.pctAboveAvg}% above average`}
-                                estimatedCostSgd={
-                                  spike.kwh * TARIFF_SGD_PER_KWH
-                                }
-                              />
-                            ))
-                          : spikeEvents.map((spike) => (
-                              <SpikeDetailCard
-                                key={spike.id}
-                                dateTime={spike.dateTime}
-                                room={spike.room}
-                                appliance={spike.appliance}
-                                magnitude={spike.magnitude}
-                                cause={spike.cause}
-                              />
-                            ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-[#10363b]">
-                      vs last week / month
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <ComparisonInsightCard
-                        label={comparisonData.vsLastWeek.label}
-                        value={comparisonData.vsLastWeek.value}
-                        isPositive={comparisonData.vsLastWeek.isPositive}
-                      />
-                      <ComparisonInsightCard
-                        label={comparisonData.vsLastMonth.label}
-                        value={comparisonData.vsLastMonth.value}
-                        isPositive={comparisonData.vsLastMonth.isPositive}
-                      />
-                    </div>
-                  </div>
-
-                  {dbDistrict && (
-                    <div>
-                      <p className="mb-2 text-xs font-semibold text-[#10363b]">
-                        vs district &amp; Singapore
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <ComparisonInsightCard
-                          label={`${dbDistrict.percentVsDistrict >= 0 ? "+" : ""}${dbDistrict.percentVsDistrict}% vs Punggol avg`}
-                          value={`${dbDistrict.percentVsDistrict >= 0 ? "+" : ""}${dbDistrict.percentVsDistrict}%`}
-                          isPositive={dbDistrict.percentVsDistrict <= 0}
-                        />
-                        <ComparisonInsightCard
-                          label={`${dbDistrict.percentVsSingapore >= 0 ? "+" : ""}${dbDistrict.percentVsSingapore}% vs Singapore avg`}
-                          value={`${dbDistrict.percentVsSingapore >= 0 ? "+" : ""}${dbDistrict.percentVsSingapore}%`}
-                          isPositive={dbDistrict.percentVsSingapore <= 0}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-[#10363b]">
-                      Habits & insights
-                      {aiInsightsLoading && (
-                        <span className="ml-2 text-[10px] font-normal text-[#6f8c91]">
-                          generating…
-                        </span>
-                      )}
-                    </p>
-                    {behaviourInsights.length > 0 ? (
-                      <div className="space-y-2">
-                        {behaviourInsights.map((insight) => (
-                          <BehaviourInsightCard
-                            key={insight.id}
-                            text={insight.text}
-                          />
-                        ))}
-                      </div>
-                    ) : aiInsightsLoading ? (
-                      <div className="h-16 animate-pulse rounded-xl bg-[rgba(157,207,212,0.15)]" />
-                    ) : null}
-                  </div>
                 </div>
               </div>
-            </CollapsibleAppliance>
-          );
-        })}
-      </div>
+            ))}
+            {insights.slice(0, spikeEvents.length > 0 ? 1 : 2).map((text, i) => (
+              <div key={i} className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.94)] to-[rgba(243,249,249,0.88)] px-4 py-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgba(134,204,210,0.20)]">
+                    <svg className="h-3.5 w-3.5 text-[#007B8A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-[#4d6b70]">{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Dehumidifier (coming soon) ── */}
+      <section className="mb-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[rgba(207,228,230,0.40)]">
+            <svg className="h-4 w-4 text-[#9bb5b9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 3v1m0 16v1M4.22 4.22l.707.707m12.02 12.02l.707.707M1 12h1m20 0h1M4.22 19.78l.707-.707M18.95 5.05l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+            </svg>
+          </div>
+          <h2 className="text-sm font-semibold text-[#9bb5b9]">Dehumidifier</h2>
+          <span className="ml-auto rounded-full border border-[rgba(157,207,212,0.30)] px-2.5 py-0.5 text-[10px] font-medium text-[#9bb5b9]">
+            Coming soon
+          </span>
+        </div>
+        <div className="rounded-2xl border border-[rgba(157,207,212,0.20)] bg-[rgba(243,249,249,0.40)] px-5 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(207,228,230,0.30)]">
+              <svg className="h-5 w-5 text-[#9bb5b9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#9bb5b9]">Xiaomi Humidifier</p>
+              <p className="mt-0.5 text-xs text-[#b8cdd0]">
+                Energy tracking and smart controls coming in a future update.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

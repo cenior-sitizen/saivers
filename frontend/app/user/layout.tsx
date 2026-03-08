@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HouseholdProvider } from "@/context/HouseholdContext";
 import { UserHeader } from "@/components/UserHeader";
+import { PushToast } from "@/components/PushToast";
 
 const NAV_ITEMS = [
   {
@@ -78,6 +79,7 @@ export default function UserLayout({
   return (
     <HouseholdProvider>
       <div className="min-h-screen bg-[#eef6f6]">
+        <PushToast />
         <UserHeader />
         {/* pb-28 clears the fixed bottom nav (~65px) + breathing room */}
         <main className="pb-28">{children}</main>
