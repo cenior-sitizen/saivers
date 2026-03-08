@@ -4,78 +4,132 @@
 
 ---
 
-## Tech Stack
+## Two Interfaces, One Codebase
 
 ```mermaid
 graph TD
-    FE["▲ Next.js 16 + React 19\nFrontend · Vercel"]
-    BE["⚙️ FastAPI · Python 3.14\nBackend · Render"]
-    CH["🗄️ ClickHouse Cloud\nTime-series Analytics"]
-    CLAUDE["🤖 Claude API\nhaiku-4-5"]
-    OPENAI["🤖 OpenAI API\nGPT-4o-mini"]
-    XP["🌬️ Xiaomi Purifier API\nFastAPI · Port 8002"]
-    DEVICE["📱 Xiaomi Smart\nAir Purifier 4"]
+    subgraph Repo["📦 Next.js 16 + React 19 — Single Repo · Vercel"]
+        subgraph Mobile["/user — Mobile App"]
+            U_DASH["Dashboard\nAircon · Rewards\nFocus · Profile"]
+            U_API["API Routes\n/api/focus\n/api/aircon\n/api/xiaomi/purifier/on|off"]
+        end
 
-    FE -->|"REST"| BE
-    FE -->|"@clickhouse/client\nserver-side"| CH
-    BE --> CH
-    BE -->|"Focus explanations"| CLAUDE
-    BE -->|"Weekly insights"| OPENAI
-    FE -->|"POST /api/xiaomi/purifier/on\nPOST /api/xiaomi/purifier/off"| XP
-    XP -->|"miIO protocol\nUDP LAN"| DEVICE
+        subgraph Admin["/admin — Admin Dashboard"]
+            A_DASH["Analytics · Incidents\nMonitoring · Recommendations"]
+            A_LC["LibreChat\nNatural language\nQuery Interface"]
+        end
+    end
+
+    subgraph AI["🤖 AI"]
+        CLAUDE["Claude haiku-4-5\nPersonalised coaching\nFocus explanations"]
+        OPENAI["OpenAI GPT-4o-mini\nWeekly energy insights"]
+    end
+
+    subgraph CH["🗄️ ClickHouse Cloud — GCP asia-southeast1"]
+        CH_DATA["Energy data · AC readings\nHabit events · Rewards\nWeekly insights · Anomaly scores"]
+    end
+
+    subgraph HW["🏠 Hardware"]
+        XP_API["Xiaomi Purifier API\nFastAPI · Port 8002"]
+        DEVICE["Xiaomi Air Purifier 4\nmiIO · LAN · UDP"]
+    end
+
+    subgraph BE["⚙️ FastAPI Backend · Render"]
+        BE_SVC["AI orchestration\nAnomaly detection\nRewards · Habits"]
+    end
+
+    %% Mobile app connections
+    U_DASH --> U_API
+    U_API -->|"30-day energy analytics"| CH
+    U_API -->|"Focus coaching"| CLAUDE
+    U_API -->|"Weekly insights"| OPENAI
+    U_API -->|"Allow / Decline button"| XP_API
+    U_API --> BE_SVC
+    XP_API -->|"miIO UDP"| DEVICE
+
+    %% Admin connections
+    A_DASH --> A_LC
+    A_LC -->|"Natural language → SQL"| CH
+    A_DASH --> BE_SVC
+    BE_SVC --> CH
+
+    classDef mobile fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    classDef admin fill:#ffedd5,stroke:#ea580c,color:#7c2d12
+    classDef ai fill:#fce7f3,stroke:#db2777,color:#831843
+    classDef db fill:#fef9c3,stroke:#ca8a04,color:#713f12
+    classDef hw fill:#f3e8ff,stroke:#9333ea,color:#3b0764
+    classDef be fill:#dcfce7,stroke:#16a34a,color:#14532d
+
+    class U_DASH,U_API mobile
+    class A_DASH,A_LC admin
+    class CLAUDE,OPENAI ai
+    class CH,CH_DATA db
+    class XP_API,DEVICE hw
+    class BE_SVC be
 ```
 
 ---
 
-## AI + ClickHouse — How It Works
+## Mobile App — AI + ClickHouse + Hardware
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Next.js
-    participant FastAPI
-    participant ClickHouse
-    participant Claude
+    actor User as 👤 Household User
+    participant App as Mobile App (/user)
+    participant CH as ClickHouse
+    participant Claude as Claude haiku-4-5
+    participant XP as Xiaomi Purifier API
+    participant Device as Air Purifier (LAN)
 
-    User->>Next.js: Opens Focus page
-    Next.js->>FastAPI: GET /api/focus/{householdId}/why
-    FastAPI->>ClickHouse: Query 30-day energy patterns\n(energy_features, sp_energy_intervals)
-    ClickHouse-->>FastAPI: Baseline kWh, anomaly scores, peak usage
-    FastAPI->>Claude: Prompt with household data
-    Claude-->>FastAPI: Personalised "Why this works" explanation
-    FastAPI-->>Next.js: explanation + factors
-    Next.js-->>User: AI-personalised coaching card
+    User->>App: Opens Focus page
+    App->>CH: Query 30-day energy patterns\n(baseline kWh, anomaly scores, peak usage)
+    CH-->>App: Household energy data
+    App->>Claude: Prompt with energy data
+    Claude-->>App: "Why this works for you" explanation
+    App-->>User: Personalised AI coaching card
+
+    User->>App: Clicks Allow
+    App->>XP: POST /api/test/xiaomi/purifier/on
+    XP->>Device: miIO protocol · UDP LAN
+    Device-->>XP: ACK — powered on
+    XP-->>App: {success: true, provider: "miio"}
+    App-->>User: "Saivers will configure this tonight ✓"
+
+    User->>App: Clicks Decline
+    App->>XP: POST /api/test/xiaomi/purifier/off
+    XP->>Device: miIO protocol · UDP LAN
+    Device-->>XP: ACK — powered off
+    XP-->>App: {success: true, provider: "miio"}
+    App-->>User: "No problem — steps still available"
 ```
 
 ---
 
-## Xiaomi Smart Device Integration
+## Admin Dashboard — LibreChat + ClickHouse
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Next.js
-    participant XiaomiAPI as Xiaomi Purifier API\n(FastAPI · :8002)
-    participant Device as Xiaomi Air Purifier 4\n(LAN · 172.29.16.195)
+    actor Admin as 🔧 Admin / Ops
+    participant Dashboard as Admin Dashboard (/admin)
+    participant LC as LibreChat
+    participant CH as ClickHouse
 
-    User->>Next.js: Clicks Allow / Decline
-    Next.js->>XiaomiAPI: POST /api/test/xiaomi/purifier/on\n POST /api/test/xiaomi/purifier/off
-    Note over Next.js,XiaomiAPI: Proxy via PURIFIER_API_URL env var
-    XiaomiAPI->>Device: miIO protocol (UDP)\nMIoT set_property power=true/false
-    Device-->>XiaomiAPI: ACK
-    XiaomiAPI-->>Next.js: {success: true, provider: "miio"}
-    Next.js-->>User: Success / Error state
+    Admin->>Dashboard: Views analytics & incidents
+    Dashboard->>CH: Pre-built queries\n(neighbourhood rollup, anomaly scores)
+    CH-->>Dashboard: Charts & tables
+
+    Admin->>LC: "Which households spiked this week?"
+    LC->>CH: Natural language → SQL\nSELECT ... FROM energy_features
+    CH-->>LC: Query results
+    LC-->>Admin: Plain-language answer + table
 ```
 
 ---
 
 ## Key Technologies
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | Next.js 16, React 19, Tailwind v4 | Mobile-first user app |
-| Backend | FastAPI, Python 3.14 | API, AI orchestration |
-| Database | **ClickHouse Cloud** | Half-hourly energy analytics |
-| AI Coaching | **Claude haiku-4-5** | Personalised focus explanations |
-| AI Insights | **OpenAI GPT-4o-mini** | Weekly energy summaries |
-| Smart Device | **Xiaomi Purifier + python-miio** | Physical device control via LAN |
+| Interface | Technology | What It Does |
+|-----------|-----------|--------------|
+| **Mobile App** | Next.js · **ClickHouse** · **Claude haiku-4-5** · **OpenAI** · **python-miio** | Energy coaching + AI explanations + physical device control |
+| **Admin Dashboard** | Next.js · **ClickHouse** · **LibreChat MCP** | Natural language energy analytics for ops team |
+| Shared Backend | FastAPI · Python 3.14 | AI orchestration, anomaly detection, rewards, habits |
