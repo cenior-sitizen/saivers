@@ -89,6 +89,23 @@ function AutomateSection({
     }
   }
 
+  async function handleDecline() {
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/xiaomi/purifier/off", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setStatus("declined");
+      } else {
+        setErrorMsg(data.error ?? "Unknown error");
+        setStatus("error");
+      }
+    } catch {
+      setErrorMsg("Could not reach purifier service");
+      setStatus("error");
+    }
+  }
+
   if (status === "allowed") {
     return (
       <div className="animate-[fadeIn_0.3s_ease_both] rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-center">
@@ -169,7 +186,7 @@ function AutomateSection({
             {status === "loading" ? "Turning on…" : "Allow"}
           </button>
           <button
-            onClick={() => setStatus("declined")}
+            onClick={handleDecline}
             disabled={status === "loading"}
             className="flex-1 rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-600 transition-all active:scale-[0.97] hover:bg-red-100 disabled:opacity-60"
           >
