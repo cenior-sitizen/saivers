@@ -1,0 +1,28 @@
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.pytest_cache/
+
+# Virtual environments
+**/.venv/
+**/venv/
+
+# Local secrets — NEVER bake into Docker image
+backend/.env
+
+# Development artifacts
+**/.mypy_cache/
+**/.ruff_cache/
+**/*.egg-info/
+**/dist/
+**/build/
+
+# Editor
+**/.idea/
+**/.vscode/
+**/*.swp
+
+# Git
+**/.git/
+**/.gitignore
