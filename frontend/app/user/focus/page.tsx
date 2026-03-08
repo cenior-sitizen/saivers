@@ -60,14 +60,45 @@ const FALLBACK_TITLES: Record<number, string> = {
   1003: "Pre-cool to 24°C before 7pm, raise to 26°C by 9pm",
 };
 
-function AutomateSection({ householdId, actionTitle }: { householdId: number; actionTitle: string }) {
-  const [status, setStatus] = useState<"idle" | "allowed" | "declined">("idle");
+function AutomateSection({
+  householdId,
+  actionTitle,
+}: {
+  householdId: number;
+  actionTitle: string;
+}) {
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "allowed" | "error" | "declined"
+  >("idle");
+  const [errorMsg, setErrorMsg] = useState<string>("");
+
+  async function handleAllow() {
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/xiaomi/purifier/on", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setStatus("allowed");
+      } else {
+        setErrorMsg(data.error ?? "Unknown error");
+        setStatus("error");
+      }
+    } catch {
+      setErrorMsg("Could not reach purifier service");
+      setStatus("error");
+    }
+  }
 
   if (status === "allowed") {
     return (
       <div className="animate-[fadeIn_0.3s_ease_both] rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-center">
-        <p className="text-sm font-semibold text-emerald-700">Saivers will configure this tonight ✓</p>
-        <p className="mt-0.5 text-xs text-emerald-600">We&apos;ll apply the setting automatically and confirm via notification.</p>
+        <p className="text-sm font-semibold text-emerald-700">
+          Saivers will configure this tonight ✓
+        </p>
+        <p className="mt-0.5 text-xs text-emerald-600">
+          We&apos;ll apply the setting automatically and confirm via
+          notification.
+        </p>
       </div>
     );
   }
@@ -75,7 +106,10 @@ function AutomateSection({ householdId, actionTitle }: { householdId: number; ac
   if (status === "declined") {
     return (
       <div className="animate-[fadeIn_0.3s_ease_both] rounded-2xl border border-[rgba(157,207,212,0.30)] bg-[rgba(243,249,249,0.60)] px-5 py-4 text-center">
-        <p className="text-sm text-[#6f8c91]">No problem — the steps above are still available whenever you&apos;re ready.</p>
+        <p className="text-sm text-[#6f8c91]">
+          No problem — the steps above are still available whenever you&apos;re
+          ready.
+        </p>
       </div>
     );
   }
@@ -85,7 +119,9 @@ function AutomateSection({ householdId, actionTitle }: { householdId: number; ac
       {/* OR divider */}
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-[rgba(157,207,212,0.35)]" />
-        <span className="text-xs font-semibold uppercase tracking-widest text-[#9bb5b9]">or</span>
+        <span className="text-xs font-semibold uppercase tracking-widest text-[#9bb5b9]">
+          or
+        </span>
         <div className="h-px flex-1 bg-[rgba(157,207,212,0.35)]" />
       </div>
 
@@ -93,29 +129,49 @@ function AutomateSection({ householdId, actionTitle }: { householdId: number; ac
       <section className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.97)] to-[rgba(243,249,249,0.90)] px-5 py-5 shadow-[0_4px_20px_rgba(0,123,138,0.08)]">
         <div className="mb-4 flex items-start gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[rgba(0,123,138,0.10)]">
-            <svg className="h-4 w-4 text-[#007B8A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg
+              className="h-4 w-4 text-[#007B8A]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
             </svg>
           </div>
           <div>
-            <p className="text-sm font-bold text-[#10363b]">Let Saivers configure this for you</p>
+            <p className="text-sm font-bold text-[#10363b]">
+              Let Saivers configure this for you
+            </p>
             <p className="mt-0.5 text-xs leading-relaxed text-[#6f8c91]">
-              We&apos;ll apply the optimal AC settings automatically tonight — no manual steps needed.
+              We&apos;ll apply the optimal AC settings automatically tonight —
+              no manual steps needed.
             </p>
           </div>
         </div>
 
+        {status === "error" && (
+          <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600 border border-red-200">
+            {errorMsg} — check the purifier service is running.
+          </p>
+        )}
+
         <div className="flex gap-3">
           <button
-            onClick={() => setStatus("allowed")}
-            className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-sm transition-all active:scale-[0.97] hover:bg-emerald-700"
+            onClick={handleAllow}
+            disabled={status === "loading"}
+            className="flex-1 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-sm transition-all active:scale-[0.97] hover:bg-emerald-700 disabled:opacity-60"
           >
-            Allow
+            {status === "loading" ? "Turning on…" : "Allow"}
           </button>
           <button
             onClick={() => setStatus("declined")}
-            className="flex-1 rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-600 transition-all active:scale-[0.97] hover:bg-red-100"
+            disabled={status === "loading"}
+            className="flex-1 rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-600 transition-all active:scale-[0.97] hover:bg-red-100 disabled:opacity-60"
           >
             Decline
           </button>
@@ -158,8 +214,13 @@ export default function FocusPage() {
       .finally(() => setWhyLoading(false));
   }, [householdId]);
 
-  const title = why?.action_title ?? action?.action_title ?? FALLBACK_TITLES[householdId] ?? "Focus Action";
-  const steps = why?.how_steps ?? action?.how_steps ?? FALLBACK_STEPS[householdId] ?? [];
+  const title =
+    why?.action_title ??
+    action?.action_title ??
+    FALLBACK_TITLES[householdId] ??
+    "Focus Action";
+  const steps =
+    why?.how_steps ?? action?.how_steps ?? FALLBACK_STEPS[householdId] ?? [];
   const saving = action?.potential_saving_sgd;
 
   return (
@@ -176,13 +237,18 @@ export default function FocusPage() {
           This week&apos;s focus
         </p>
         <h1 className="mt-1 text-[19px] font-bold leading-snug text-[#10363b]">
-          {actionLoading
-            ? <span className="inline-block h-6 w-64 animate-pulse rounded bg-[rgba(207,228,230,0.38)]" />
-            : title}
+          {actionLoading ? (
+            <span className="inline-block h-6 w-64 animate-pulse rounded bg-[rgba(207,228,230,0.38)]" />
+          ) : (
+            title
+          )}
         </h1>
         {saving != null && saving > 0 && (
           <p className="mt-1.5 text-sm text-[#6f8c91]">
-            Potential saving: <span className="font-semibold text-emerald-700">~S${saving.toFixed(2)}/week</span>
+            Potential saving:{" "}
+            <span className="font-semibold text-emerald-700">
+              ~S${saving.toFixed(2)}/week
+            </span>
           </p>
         )}
       </div>
@@ -193,12 +259,23 @@ export default function FocusPage() {
           <div className="mb-3 flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#007B8A]">
-                <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                <svg
+                  className="h-4 w-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
                 </svg>
               </div>
-              <h2 className="text-sm font-bold text-[#10363b]">Why this works for you</h2>
+              <h2 className="text-sm font-bold text-[#10363b]">
+                Why this works for you
+              </h2>
             </div>
             {why && !whyLoading && (
               <span className="shrink-0 rounded-full border border-[rgba(0,123,138,0.20)] bg-[rgba(0,123,138,0.06)] px-2 py-0.5 text-[10px] font-semibold text-[#007B8A]">
@@ -215,7 +292,9 @@ export default function FocusPage() {
               <div className="h-4 w-4/5 animate-pulse rounded-full bg-[rgba(134,204,210,0.20)]" />
               <div className="mt-3 h-4 w-full animate-pulse rounded-full bg-[rgba(134,204,210,0.15)]" />
               <div className="h-4 w-3/4 animate-pulse rounded-full bg-[rgba(134,204,210,0.15)]" />
-              <p className="mt-2 text-[11px] text-[#9bb5b9]">Analysing your usage data…</p>
+              <p className="mt-2 text-[11px] text-[#9bb5b9]">
+                Analysing your usage data…
+              </p>
             </div>
           )}
 
@@ -225,7 +304,9 @@ export default function FocusPage() {
               {/* Explanation text — split on double newlines into paragraphs */}
               <div className="space-y-3">
                 {why.explanation.split(/\n\n+/).map((para, i) => (
-                  <p key={i} className="text-sm leading-relaxed text-[#4d6b70]">{para}</p>
+                  <p key={i} className="text-sm leading-relaxed text-[#4d6b70]">
+                    {para}
+                  </p>
                 ))}
               </div>
 
@@ -237,7 +318,10 @@ export default function FocusPage() {
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {why.factors.map((f, i) => (
-                      <span key={i} className="rounded-full border border-[rgba(157,207,212,0.35)] bg-[rgba(134,204,210,0.07)] px-2.5 py-0.5 text-[11px] text-[#4d6b70]">
+                      <span
+                        key={i}
+                        className="rounded-full border border-[rgba(157,207,212,0.35)] bg-[rgba(134,204,210,0.07)] px-2.5 py-0.5 text-[11px] text-[#4d6b70]"
+                      >
                         {f}
                       </span>
                     ))}
@@ -250,7 +334,9 @@ export default function FocusPage() {
           {/* Fallback if AI fails */}
           {!whyLoading && whyError && (
             <p className="text-sm leading-relaxed text-[#4d6b70]">
-              {action?.why_body ?? FALLBACK_WHY[householdId] ?? "This action is one of the most effective ways to reduce your electricity bill based on your usage patterns."}
+              {action?.why_body ??
+                FALLBACK_WHY[householdId] ??
+                "This action is one of the most effective ways to reduce your electricity bill based on your usage patterns."}
             </p>
           )}
         </section>
@@ -259,9 +345,18 @@ export default function FocusPage() {
         <section className="rounded-2xl border border-[rgba(157,207,212,0.40)] bg-gradient-to-b from-[rgba(255,255,255,0.97)] to-[rgba(243,249,249,0.90)] px-5 py-5 shadow-[0_4px_20px_rgba(0,123,138,0.08)]">
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[rgba(134,204,210,0.22)]">
-              <svg className="h-4 w-4 text-[#007B8A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              <svg
+                className="h-4 w-4 text-[#007B8A]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
               </svg>
             </div>
             <h2 className="text-sm font-bold text-[#10363b]">How to do it</h2>
@@ -270,7 +365,10 @@ export default function FocusPage() {
           {steps.length === 0 ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-4 animate-pulse rounded-full bg-[rgba(134,204,210,0.20)]" />
+                <div
+                  key={i}
+                  className="h-4 animate-pulse rounded-full bg-[rgba(134,204,210,0.20)]"
+                />
               ))}
             </div>
           ) : (
@@ -280,7 +378,9 @@ export default function FocusPage() {
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#007B8A] text-[11px] font-bold text-white">
                     {i + 1}
                   </span>
-                  <p className="text-sm leading-relaxed text-[#4d6b70]">{step}</p>
+                  <p className="text-sm leading-relaxed text-[#4d6b70]">
+                    {step}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -296,11 +396,25 @@ export default function FocusPage() {
           className="flex items-center justify-between rounded-2xl border border-[rgba(157,207,212,0.40)] bg-white px-4 py-3.5 shadow-sm transition-colors hover:border-[#86CCD2]"
         >
           <div>
-            <p className="text-sm font-semibold text-[#10363b]">Track your progress</p>
-            <p className="text-xs text-[#6f8c91]">See if this week&apos;s action is working</p>
+            <p className="text-sm font-semibold text-[#10363b]">
+              Track your progress
+            </p>
+            <p className="text-xs text-[#6f8c91]">
+              See if this week&apos;s action is working
+            </p>
           </div>
-          <svg className="h-4 w-4 text-[#6f8c91]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <svg
+            className="h-4 w-4 text-[#6f8c91]"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </Link>
       </div>
