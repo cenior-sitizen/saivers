@@ -19,7 +19,7 @@ export default function VouchersPage() {
  });
 
  return (
- <div className="min-h-screen px-4 pb-24 sm:mx-auto sm:max-w-md sm:px-0">
+ <div className="px-4 py-6 sm:mx-auto sm:max-w-md sm:px-0">
  <Link
  href="/user/rewards"
  className="mb-4 inline-flex items-center gap-1 text-sm text-[#666666] hover:text-[#10363b]"

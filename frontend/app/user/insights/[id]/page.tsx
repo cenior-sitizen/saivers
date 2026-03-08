@@ -153,7 +153,7 @@ export default function InsightDetailPage() {
   const vsLastWeekPositive = insight.change_pct > 0;
 
   return (
-    <div className="min-h-screen pb-28">
+    <div className="pb-2">
       <div className="px-4 py-6 sm:mx-auto sm:max-w-md sm:px-0">
         {/* Back */}
         <Link

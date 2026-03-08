@@ -40,10 +40,11 @@ app.add_middleware(
 )
 
 # Routers
-from app.routers import insights, devices, habits, admin, aircon, ingest, usage, weekly_insights, recommendations, reports  # noqa: E402
+from app.routers import insights, devices, habits, admin, aircon, ingest, usage, weekly_insights, recommendations, reports, focus  # noqa: E402
 
 app.include_router(insights.router,        prefix="/api/insights",        tags=["insights"])
 app.include_router(weekly_insights.router, prefix="/api/insights",        tags=["weekly-insights"])
+app.include_router(focus.router,           prefix="/api/focus",           tags=["focus"])
 app.include_router(devices.router,         prefix="/api/devices",         tags=["devices"])
 app.include_router(aircon.router,          prefix="/api/aircon",          tags=["aircon"])
 app.include_router(habits.router,          prefix="/api/habits",          tags=["habits"])

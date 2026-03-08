@@ -197,6 +197,102 @@ def explain_anomaly(
         return f"Unable to generate explanation: {e}"
 
 
+def generate_why_explanation(context: dict) -> dict:
+    """
+    Generate a deeply personalized "Why this works for YOU" explanation.
+
+    context keys:
+      name, flat_type, neighborhood, action_title, potential_saving_sgd,
+      avg_daily_runtime_h, peak_hour_range, this_week_kwh, vs_last_week_pct,
+      current_temp_c, highest_weekday, singapore_season, season_notes,
+      how_steps (list[str])
+
+    Returns: {explanation: str, factors: list[str]}
+    """
+    try:
+        client = get_openai_client()
+
+        factors = []
+        behaviour_lines = []
+
+        if context.get("avg_daily_runtime_h"):
+            h = context["avg_daily_runtime_h"]
+            behaviour_lines.append(f"- AC runs avg {h:.1f}h/day")
+            factors.append(f"Your {h:.1f}h average daily runtime")
+
+        if context.get("peak_hour_range"):
+            behaviour_lines.append(f"- Peak AC hours: {context['peak_hour_range']}")
+            factors.append(f"Peak usage at {context['peak_hour_range']}")
+
+        if context.get("current_temp_c"):
+            t = context["current_temp_c"]
+            behaviour_lines.append(f"- Current AC temperature: {t}°C")
+            factors.append(f"Your current {t}°C setting")
+
+        if context.get("this_week_kwh"):
+            kwh = context["this_week_kwh"]
+            pct = context.get("vs_last_week_pct", 0)
+            direction = "↑" if pct > 0 else "↓"
+            behaviour_lines.append(f"- This week: {kwh:.1f} kWh ({direction}{abs(pct):.1f}% vs last week)")
+            factors.append(f"This week's {kwh:.1f} kWh usage")
+
+        if context.get("highest_weekday"):
+            behaviour_lines.append(f"- Highest usage day: {context['highest_weekday']}")
+
+        factors.append(f"{context.get('singapore_season', 'Singapore climate')}")
+        factors.append(f"{context.get('flat_type', 'HDB flat')}, {context.get('neighborhood', 'Singapore')}")
+
+        behaviour_block = "\n".join(behaviour_lines) if behaviour_lines else "No detailed data available."
+
+        prompt = f"""You are Saivers, a Singapore home energy coach. Write a "Why this works for you specifically" explanation.
+
+HOUSEHOLD: {context.get('name', 'Resident')}, {context.get('flat_type', 'HDB flat')}, {context.get('neighborhood', 'Singapore')}
+
+THEIR ACTUAL BEHAVIOUR:
+{behaviour_block}
+
+SINGAPORE CONTEXT (March 2026):
+- Season: {context.get('singapore_season', 'Transitional weather')}
+- {context.get('season_notes', '')}
+- {context.get('neighborhood', 'Singapore')}: {context.get('neighborhood_notes', 'typical HDB estate')}
+- Optimal sleep temperature: 25–26°C (National Sleep Foundation + NTU research on tropical climates)
+
+RECOMMENDED ACTION: "{context.get('action_title', 'Adjust AC settings')}"
+ESTIMATED SAVING: S${context.get('potential_saving_sgd', 0):.2f}/week
+
+Write 3 short paragraphs in plain English:
+1. What is happening RIGHT NOW based on their specific data (reference their actual numbers)
+2. The science and Singapore-specific reasons why this action will work for their situation
+3. A specific prediction: "If {context.get('name', 'you')} does this for the next 7 days..."
+
+Rules:
+- Feel like a knowledgeable friend, not a report
+- Use their name ({context.get('name', 'Resident')}) naturally once or twice
+- Reference their specific numbers from the data above
+- Keep each paragraph to 2-3 sentences
+- No bullet points, no headers, just flowing text"""
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a warm, knowledgeable Singapore energy coach. Be specific, human, and practical. Reference real data. No markdown."},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=400,
+            temperature=0.5,
+        )
+
+        explanation = response.choices[0].message.content.strip()
+        return {"explanation": explanation, "factors": factors}
+
+    except Exception as e:
+        # Fallback to static why_body if AI fails
+        return {
+            "explanation": context.get("why_body", "This action is one of the most effective ways to reduce your electricity bill based on your current usage patterns."),
+            "factors": [],
+        }
+
+
 def generate_chat_response(household_context: dict, user_message: str) -> str:
     """Generate a conversational response for the coach chat endpoint."""
     try:

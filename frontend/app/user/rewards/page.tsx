@@ -136,7 +136,7 @@ export default function RewardsPage() {
  const balance = data?.points_balance ?? 0;
 
  return (
- <div className="min-h-screen px-4 pb-24 pt-6 sm:mx-auto sm:max-w-md sm:px-0">
+ <div className="px-4 pb-2 pt-6 sm:mx-auto sm:max-w-md sm:px-0">
  {/* Page title - matches My Home / Aircon Impact */}
  <div className="mb-6 flex items-end justify-between">
  <div>
