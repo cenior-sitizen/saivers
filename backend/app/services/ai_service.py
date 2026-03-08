@@ -162,6 +162,127 @@ def generate_incident_summary(
         return f"Excess {excess_kwh:.2f} kWh above baseline (score {anomaly_score:.1f})"
 
 
+def generate_dashboard_summary(
+    region: dict,
+    grid: dict,
+    anomalies: dict,
+) -> str:
+    """
+    Generate a 2-3 sentence AI summary of the admin dashboard.
+    Input: region_summary, grid_contribution, anomalies_summary as dicts.
+    """
+    try:
+        client = get_openai_client()
+        reduction = grid.get("neighborhood_total_reduction_pct", 0)
+        households = grid.get("households", [])[:5]
+        above = [h for h in households if h.get("reduction_pct", 0) < 0]
+        below = [h for h in households if h.get("reduction_pct", 0) >= 0]
+        context = (
+            f"Punggol neighbourhood: {region.get('household_count', 0)} households, "
+            f"{region.get('total_kwh', 0):.1f} kWh (7d), S${region.get('total_cost_sgd', 0):.2f}, "
+            f"peak reduction {reduction:.1f}% vs 4-week baseline.\n"
+            f"Anomalies (7d): {anomalies.get('total_anomalies', 0)} total, "
+            f"{anomalies.get('affected_households', 0)} affected, max score {anomalies.get('max_score', 0):.1f}.\n"
+        )
+        if above:
+            context += f"Above baseline: HH {', '.join(str(h['household_id']) for h in above)}.\n"
+        if below:
+            context += f"Below baseline (saving): HH {', '.join(str(h['household_id']) for h in below[:3])}."
+        prompt = (
+            f"Summarize this energy ops dashboard in 2-3 concise sentences for a grid operator.\n"
+            f"Data:\n{context}\n\n"
+            "Highlight: peak reduction trend, any households of concern, anomaly status. "
+            "Be specific with household IDs. No markdown."
+        )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.3,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
+        return ""
+
+
+def generate_observability_summary(
+    anomalies: dict,
+    households: list[dict],
+) -> str:
+    """
+    Generate an aggregate AI health summary for the observability dashboard.
+    Input: anomalies_summary dict, list of HouseholdSummary-like dicts.
+    """
+    try:
+        client = get_openai_client()
+        affected = [h for h in households if h.get("anomaly_count", 0) > 0]
+        context = (
+            f"Last 7 days: {anomalies.get('total_anomalies', 0)} anomalies, "
+            f"{anomalies.get('affected_households', 0)} affected households, "
+            f"max score {anomalies.get('max_score', 0):.1f}.\n"
+        )
+        if affected:
+            context += "Households with anomalies today: " + ", ".join(
+                f"HH{h['household_id']} ({h.get('name', '?')}): {h['anomaly_count']} events"
+                for h in affected[:5]
+            )
+        else:
+            context += "No households with anomalies today."
+        prompt = (
+            f"Summarize this energy telemetry health in 2-3 sentences for an ops team.\n"
+            f"Data:\n{context}\n\n"
+            "Identify likely root causes (AC usage, peak hours, meter sync) and top recommended action. "
+            "Be concise. No markdown."
+        )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.3,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
+        return ""
+
+
+def generate_incidents_summary(incidents: list[dict]) -> str:
+    """
+    Generate a batch briefing summary of all incidents for the last N days.
+    Input: list of incident dicts with household_id, ts, severity, description, excess_kwh, anomaly_score.
+    """
+    try:
+        client = get_openai_client()
+        if not incidents:
+            return "No incidents in the last 7 days. Telemetry is healthy."
+        by_hh = {}
+        for inc in incidents[:20]:
+            hid = inc.get("household_id") or 0
+            by_hh[hid] = by_hh.get(hid, 0) + 1
+        context = (
+            f"{len(incidents)} incidents in last 7 days. "
+            f"By household: " + ", ".join(f"HH{k}: {v} events" for k, v in sorted(by_hh.items())[:5]) + ".\n"
+            f"Sample: " + "; ".join(
+                f"HH{inc.get('household_id')} @ {str(inc.get('ts', ''))[:16]} — {inc.get('severity', '?')}, "
+                f"excess {inc.get('excess_kwh', 0):.2f} kWh"
+                for inc in incidents[:5]
+            )
+        )
+        prompt = (
+            f"Summarize these energy anomaly incidents in 2-3 sentences for an ops briefing.\n"
+            f"Data:\n{context}\n\n"
+            "Highlight: which households need attention, common patterns, suggested next step. No markdown."
+        )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.3,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception:
+        return ""
+
+
 def explain_anomaly(
     household_id: int,
     ts: str,
@@ -195,6 +316,102 @@ def explain_anomaly(
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"Unable to generate explanation: {e}"
+
+
+def generate_why_explanation(context: dict) -> dict:
+    """
+    Generate a deeply personalized "Why this works for YOU" explanation.
+
+    context keys:
+      name, flat_type, neighborhood, action_title, potential_saving_sgd,
+      avg_daily_runtime_h, peak_hour_range, this_week_kwh, vs_last_week_pct,
+      current_temp_c, highest_weekday, singapore_season, season_notes,
+      how_steps (list[str])
+
+    Returns: {explanation: str, factors: list[str]}
+    """
+    try:
+        client = get_openai_client()
+
+        factors = []
+        behaviour_lines = []
+
+        if context.get("avg_daily_runtime_h"):
+            h = context["avg_daily_runtime_h"]
+            behaviour_lines.append(f"- AC runs avg {h:.1f}h/day")
+            factors.append(f"Your {h:.1f}h average daily runtime")
+
+        if context.get("peak_hour_range"):
+            behaviour_lines.append(f"- Peak AC hours: {context['peak_hour_range']}")
+            factors.append(f"Peak usage at {context['peak_hour_range']}")
+
+        if context.get("current_temp_c"):
+            t = context["current_temp_c"]
+            behaviour_lines.append(f"- Current AC temperature: {t}°C")
+            factors.append(f"Your current {t}°C setting")
+
+        if context.get("this_week_kwh"):
+            kwh = context["this_week_kwh"]
+            pct = context.get("vs_last_week_pct", 0)
+            direction = "↑" if pct > 0 else "↓"
+            behaviour_lines.append(f"- This week: {kwh:.1f} kWh ({direction}{abs(pct):.1f}% vs last week)")
+            factors.append(f"This week's {kwh:.1f} kWh usage")
+
+        if context.get("highest_weekday"):
+            behaviour_lines.append(f"- Highest usage day: {context['highest_weekday']}")
+
+        factors.append(f"{context.get('singapore_season', 'Singapore climate')}")
+        factors.append(f"{context.get('flat_type', 'HDB flat')}, {context.get('neighborhood', 'Singapore')}")
+
+        behaviour_block = "\n".join(behaviour_lines) if behaviour_lines else "No detailed data available."
+
+        prompt = f"""You are Saivers, a Singapore home energy coach. Write a "Why this works for you specifically" explanation.
+
+HOUSEHOLD: {context.get('name', 'Resident')}, {context.get('flat_type', 'HDB flat')}, {context.get('neighborhood', 'Singapore')}
+
+THEIR ACTUAL BEHAVIOUR:
+{behaviour_block}
+
+SINGAPORE CONTEXT (March 2026):
+- Season: {context.get('singapore_season', 'Transitional weather')}
+- {context.get('season_notes', '')}
+- {context.get('neighborhood', 'Singapore')}: {context.get('neighborhood_notes', 'typical HDB estate')}
+- Optimal sleep temperature: 25–26°C (National Sleep Foundation + NTU research on tropical climates)
+
+RECOMMENDED ACTION: "{context.get('action_title', 'Adjust AC settings')}"
+ESTIMATED SAVING: S${context.get('potential_saving_sgd', 0):.2f}/week
+
+Write 3 short paragraphs in plain English:
+1. What is happening RIGHT NOW based on their specific data (reference their actual numbers)
+2. The science and Singapore-specific reasons why this action will work for their situation
+3. A specific prediction: "If {context.get('name', 'you')} does this for the next 7 days..."
+
+Rules:
+- Feel like a knowledgeable friend, not a report
+- Use their name ({context.get('name', 'Resident')}) naturally once or twice
+- Reference their specific numbers from the data above
+- Keep each paragraph to 2-3 sentences
+- No bullet points, no headers, just flowing text"""
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a warm, knowledgeable Singapore energy coach. Be specific, human, and practical. Reference real data. No markdown."},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=400,
+            temperature=0.5,
+        )
+
+        explanation = response.choices[0].message.content.strip()
+        return {"explanation": explanation, "factors": factors}
+
+    except Exception as e:
+        # Fallback to static why_body if AI fails
+        return {
+            "explanation": context.get("why_body", "This action is one of the most effective ways to reduce your electricity bill based on your current usage patterns."),
+            "factors": [],
+        }
 
 
 def generate_chat_response(household_context: dict, user_message: str) -> str:

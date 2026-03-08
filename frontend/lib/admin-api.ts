@@ -106,6 +106,23 @@ export async function getAnomaliesSummary(days = 7): Promise<AnomaliesSummary> {
   return fetchJson(`${BASE}/anomalies-summary?days=${days}`);
 }
 
+export interface AISummaryResponse {
+  summary: string;
+  ai_available: boolean;
+}
+
+export async function getDashboardSummary(): Promise<AISummaryResponse> {
+  return fetchJson(`${BASE}/dashboard-summary`);
+}
+
+export async function getObservabilitySummary(): Promise<AISummaryResponse> {
+  return fetchJson(`${BASE}/observability-summary`);
+}
+
+export async function getIncidentsSummary(days = 7): Promise<AISummaryResponse> {
+  return fetchJson(`${BASE}/incidents-summary?days=${days}`);
+}
+
 export interface ExplainAnomalyRequest {
   household_id: number;
   ts: string;

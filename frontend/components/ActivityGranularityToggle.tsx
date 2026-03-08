@@ -30,7 +30,7 @@ export function ActivityGranularityToggle({
           className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
             period === opt.value
               ? "bg-[#86CCD2] text-white shadow-sm"
-              : "bg-white text-[#666666] hover:bg-[#86CCD2]/10 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-[#86CCD2]/20"
+              : "bg-white text-[#666666] hover:bg-[#86CCD2]/10"
           }`}
         >
           {opt.label}

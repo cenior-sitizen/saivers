@@ -2,38 +2,39 @@
 
 import type { ReactElement } from "react";
 import {
- ComposedChart,
- Area,
- Line,
- XAxis,
- YAxis,
- CartesianGrid,
- Tooltip,
- ResponsiveContainer,
- Legend,
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
 } from "recharts";
 
 interface UsageDataPoint {
- time: string;
- value: number;
- isOn?: boolean;
- isSpike?: boolean;
- districtAvg?: number;
- singaporeAvg?: number;
+  time: string;
+  value: number;
+  isOn?: boolean;
+  isSpike?: boolean;
+  districtAvg?: number;
+  singaporeAvg?: number;
 }
 
 interface UsageBehaviourChartProps {
- data: UsageDataPoint[];
- title?: string;
+  data: UsageDataPoint[];
+  title?: string;
 }
 
-export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): ReactElement {
+export function UsageBehaviourChart({
+  data,
+  title,
+}: UsageBehaviourChartProps): ReactElement {
   return (
-    <div className="rounded-2xl border border-[#86CCD2]/30 bg-white p-5 shadow-sm dark:border-[#86CCD2]/20 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-[#86CCD2]/30 bg-white p-5 shadow-sm">
       {title && (
-        <h3 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          {title}
-        </h3>
+        <h3 className="mb-4 text-sm font-semibold text-[#10363b]">{title}</h3>
       )}
       <div className="h-[240px] w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -74,11 +75,14 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
               }}
               formatter={(value, name) => {
                 const labels: Record<string, string> = {
-                  value: "You",
-                  districtAvg: "Paya Lebar avg",
-                  singaporeAvg: "Singapore avg",
+                  value: "You (AC only)",
+                  districtAvg: "Punggol avg †",
+                  singaporeAvg: "SG avg (est.) †",
                 };
-                return [`${value ?? 0} kWh`, labels[String(name)] ?? String(name)];
+                return [
+                  `${value ?? 0} kWh`,
+                  labels[String(name)] ?? String(name),
+                ];
               }}
               labelFormatter={(label) => `Time: ${label}`}
             />
@@ -86,9 +90,9 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
               wrapperStyle={{ fontSize: 11 }}
               formatter={(value) => {
                 const labels: Record<string, string> = {
-                  value: "You",
-                  districtAvg: "Paya Lebar avg",
-                  singaporeAvg: "Singapore avg",
+                  value: "You (AC only)",
+                  districtAvg: "Punggol avg †",
+                  singaporeAvg: "SG avg (est.) †",
                 };
                 return labels[value] ?? value;
               }}
@@ -126,6 +130,12 @@ export function UsageBehaviourChart({ data, title }: UsageBehaviourChartProps): 
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      {data.some((d) => d.districtAvg != null || d.singaporeAvg != null) && (
+        <p className="mt-2 text-[10px] text-[#9bb5b9]">
+          † District / SG figures represent total household energy (all
+          appliances). Your line shows AC only.
+        </p>
+      )}
     </div>
   );
 }

@@ -7,15 +7,17 @@ export type TimeRangeOption = "day" | "week" | "month";
 interface TimeRangeToggleProps {
  value: TimeRangeOption;
  onChange: (value: TimeRangeOption) => void;
+ options?: TimeRangeOption[];
 }
 
-const options: { value: TimeRangeOption; label: string }[] = [
+const ALL_OPTIONS: { value: TimeRangeOption; label: string }[] = [
  { value: "day", label: "Day" },
  { value: "week", label: "Week" },
  { value: "month", label: "Month" },
 ];
 
-export function TimeRangeToggle({ value, onChange }: TimeRangeToggleProps): ReactElement {
+export function TimeRangeToggle({ value, onChange, options: allowed }: TimeRangeToggleProps): ReactElement {
+ const options = allowed ? ALL_OPTIONS.filter((o) => allowed.includes(o.value)) : ALL_OPTIONS;
  return (
  <div className="inline-flex rounded-xl border border-[#86CCD2]/40 bg-white p-1 shadow-sm">
  {options.map((opt) => (

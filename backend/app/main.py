@@ -40,10 +40,11 @@ app.add_middleware(
 )
 
 # Routers
-from app.routers import insights, devices, habits, admin, aircon, ingest, usage, weekly_insights, recommendations, reports  # noqa: E402
+from app.routers import insights, devices, habits, admin, aircon, ingest, usage, weekly_insights, recommendations, reports, focus  # noqa: E402
 
 app.include_router(insights.router,        prefix="/api/insights",        tags=["insights"])
 app.include_router(weekly_insights.router, prefix="/api/insights",        tags=["weekly-insights"])
+app.include_router(focus.router,           prefix="/api/focus",           tags=["focus"])
 app.include_router(devices.router,         prefix="/api/devices",         tags=["devices"])
 app.include_router(aircon.router,          prefix="/api/aircon",          tags=["aircon"])
 app.include_router(habits.router,          prefix="/api/habits",          tags=["habits"])
@@ -56,4 +57,25 @@ app.include_router(reports.router,         prefix="/api/reports",         tags=[
 
 @app.get("/health", tags=["health"])
 def health() -> dict:
-    return {"status": "ok", "service": "wattcoach-api"}
+    import os
+    ch_status = "unconfigured"
+    ch_error = None
+    try:
+        from app.db.client import get_client
+        client = get_client()
+        result = client.query("SELECT 1 AS ok")
+        rows = list(result.named_results())
+        ch_status = "ok" if rows and rows[0].get("ok") == 1 else "unexpected_result"
+    except Exception as e:
+        ch_status = "error"
+        ch_error = str(e)
+    return {
+        "status": "ok",
+        "service": "saivers-api",
+        "clickhouse": {
+            "status": ch_status,
+            "host": os.getenv("CLICKHOUSE_HOST", "(not set)"),
+            "database": os.getenv("CLICKHOUSE_DB", "(not set)"),
+            "error": ch_error,
+        },
+    }

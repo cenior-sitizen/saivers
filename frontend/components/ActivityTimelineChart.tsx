@@ -65,8 +65,8 @@ export function ActivityTimelineChart({
   const insight = deriveActivityInsight(data);
 
   return (
-    <div className="rounded-2xl border border-[#86CCD2]/30 bg-white p-5 shadow-sm dark:border-[#86CCD2]/20 dark:bg-zinc-900">
-      <h3 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="rounded-2xl border border-[#86CCD2]/30 bg-white p-5 shadow-sm">
+      <h3 className="mb-4 text-sm font-semibold text-[#10363b]">
         {title}
       </h3>
       <div className="overflow-x-auto pb-2 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -79,28 +79,28 @@ export function ActivityTimelineChart({
             >
               <div
                 className={`h-8 w-6 rounded-sm ${
-                  point.isOn ? "bg-[#86CCD2]" : "bg-zinc-100 dark:bg-zinc-800"
+                  point.isOn ? "bg-[#86CCD2]" : "bg-[rgba(157,207,212,0.15)]"
                 }`}
               />
-              <span className="text-[9px] font-medium text-[#666666] dark:text-zinc-400">
+              <span className="text-[9px] font-medium text-[#666666]">
                 {point.time.replace(":00", "")}
               </span>
             </div>
           ))}
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-2 text-xs text-[#666666] dark:text-zinc-400">
+      <div className="mt-3 flex items-center gap-2 text-xs text-[#6f8c91]">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm bg-[#86CCD2]" />
           On
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-sm bg-zinc-200 dark:bg-zinc-700" />
+          <span className="h-2.5 w-2.5 rounded-sm bg-[rgba(157,207,212,0.20)]" />
           Off
         </span>
       </div>
       {insight && (
-        <p className="mt-3 text-sm text-[#666666] dark:text-zinc-400">
+        <p className="mt-3 text-sm text-[#4d6b70]">
           {insight}
         </p>
       )}

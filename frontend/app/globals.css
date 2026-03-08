@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Switch Tailwind dark-mode to class strategy — dark: classes only fire
+   when a .dark element is present, never from OS preference */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ── SP Group × Saivers Design System ────────────────────────────────────── */
 
 :root {
