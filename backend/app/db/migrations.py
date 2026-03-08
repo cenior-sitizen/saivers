@@ -232,6 +232,30 @@ _DDLS: list[tuple[str, str]] = [
         """,
     ),
     (
+        "focus_actions",
+        """
+        CREATE TABLE IF NOT EXISTS focus_actions
+        (
+            action_id            String,
+            household_id         UInt32,
+            week_start           Date,
+            action_title         String,
+            action_subtitle      String,
+            category             LowCardinality(String)  DEFAULT 'habit',
+            potential_saving_sgd Decimal(6,2)            DEFAULT 0,
+            why_headline         String,
+            why_body             String,
+            how_steps_json       String                  DEFAULT '[]',
+            effort_level         LowCardinality(String)  DEFAULT 'low',
+            impact_level         LowCardinality(String)  DEFAULT 'medium',
+            updated_at           DateTime('Asia/Singapore') DEFAULT now()
+        )
+        ENGINE = ReplacingMergeTree(updated_at)
+        PARTITION BY toYYYYMM(week_start)
+        ORDER BY (household_id, week_start, action_id)
+        """,
+    ),
+    (
         "neighborhood_rollup_mv",
         """
         CREATE MATERIALIZED VIEW IF NOT EXISTS neighborhood_rollup_mv

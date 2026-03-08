@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useHousehold } from "@/context/HouseholdContext";
 
 interface WeeklyInsight {
@@ -21,6 +22,9 @@ const SLIDE_MS   = 420;
 
 export function PushToast() {
   const { householdId } = useHousehold();
+  const pathname = usePathname();
+  const onInsightPage = pathname.startsWith("/user/insights");
+
   const [insights, setInsights] = useState<WeeklyInsight[]>([]);
   const [toast, setToast]       = useState<WeeklyInsight | null>(null);
   const [mounted, setMounted]   = useState(false);
@@ -73,7 +77,23 @@ export function PushToast() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [insights.length]);
 
-  if (!mounted || !toast) return null;
+  // Immediately hide when entering an insight page
+  useEffect(() => {
+    if (onInsightPage && mounted) {
+      setVisible(false);
+      setTimeout(() => setMounted(false), SLIDE_MS + 50);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onInsightPage]);
+
+  function handleClick() {
+    // Slide up immediately on tap — navigation happens via the Link href
+    clearAll();
+    setVisible(false);
+    setTimeout(() => setMounted(false), SLIDE_MS + 50);
+  }
+
+  if (!mounted || !toast || onInsightPage) return null;
 
   return (
     <>
@@ -84,6 +104,7 @@ export function PushToast() {
       >
         <Link
           href={`/user/insights/${toast.insight_id}`}
+          onClick={handleClick}
           className="pointer-events-auto w-full max-w-sm"
           style={{
             transform: visible ? "translateY(0)" : "translateY(calc(-100% - 1rem))",

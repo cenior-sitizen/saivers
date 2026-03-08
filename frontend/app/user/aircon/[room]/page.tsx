@@ -133,7 +133,7 @@ export default function RoomAirconPage() {
   const vsLastWeek = spEnergy?.vsLastWeekPct ?? null;
 
   return (
-    <div className="min-h-screen px-4 pb-28 pt-2 sm:mx-auto sm:max-w-md sm:px-0">
+    <div className="px-4 pb-2 pt-2 sm:mx-auto sm:max-w-md sm:px-0">
       {/* Header */}
       <div className="mb-5">
         <Link href="/user" className="mb-2 inline-flex items-center gap-1 text-sm text-[#666666] hover:text-[#10363b]">
